@@ -2,41 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design system para análise de vídeos técnicos - mobile-first */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Cores principais do sistema */
+    --background: 248 250 252;
+    --foreground: 15 23 42;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Azul - botões primários */
+    --primary: 217 91% 60%;
+    --primary-foreground: 255 255 255;
+    --primary-hover: 217 91% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Cinza - botões secundários */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 71 84% 6%;
+    --secondary-hover: 210 40% 90%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Verde - sucesso */
+    --success: 142 71% 45%;
+    --success-foreground: 255 255 255;
+    --success-hover: 142 71% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Vermelho - erro */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 255 255 255;
+    --destructive-hover: 0 84% 55%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 71 84% 35%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 71 84% 6%;
 
-    --radius: 0.5rem;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    /* Gradientes e sombras */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Animações */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-in-out;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +121,71 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Card com sombra suave */
+  .card-soft {
+    @apply bg-card rounded-lg shadow-[var(--shadow-card)] border border-border;
+  }
+
+  /* Botões customizados */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] 
+           rounded-lg px-6 py-3 font-medium transition-[var(--transition-fast)] 
+           shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-hover)];
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-[hsl(var(--secondary-hover))]
+           rounded-lg px-6 py-3 font-medium transition-[var(--transition-fast)]
+           shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-hover)];
+  }
+
+  .btn-success {
+    @apply bg-[hsl(var(--success))] text-success-foreground hover:bg-[hsl(var(--success-hover))]
+           rounded-lg px-6 py-3 font-medium transition-[var(--transition-fast)]
+           shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-hover)];
+  }
+
+  /* Input com validação */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg border border-input bg-background
+           focus:ring-2 focus:ring-ring focus:border-transparent
+           transition-[var(--transition-fast)] placeholder:text-muted-foreground;
+  }
+
+  .input-error {
+    @apply border-destructive focus:ring-destructive;
+  }
+
+  /* Animações */
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
