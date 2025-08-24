@@ -18,12 +18,14 @@ interface ResultadosRelatorioProps {
     };
   };
   onNewAnalysis: () => void;
+  videoBlob?: Blob; // Adiciona o vídeo original
 }
 
 const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
   formData,
   results,
-  onNewAnalysis
+  onNewAnalysis,
+  videoBlob
 }) => {
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -33,18 +35,26 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
 
   const handleDownloadReport = async () => {
     try {
-      // Cria um ZIP real com frames e relatório
+      // Cria um ZIP otimizado com vídeo, frames e relatório
       const zip = new JSZip();
       const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `relatorio_video_${formData.numeroSerie}_${timestamp}.zip`;
+      const filename = `analise_tecnica_${formData.numeroSerie}_${timestamp}.zip`;
       
-      // Adiciona frames ao ZIP
-      const framesFolder = zip.folder("frames");
+      // 1. Adiciona o vídeo original (se disponível)
+      if (videoBlob) {
+        zip.file(`video_original_${formData.numeroSerie}.mp4`, videoBlob);
+      }
+      
+      // 2. Adiciona frames otimizados ao ZIP
+      const framesFolder = zip.folder("frames_extraidos");
       for (let i = 0; i < results.frames.length; i++) {
         const frameData = results.frames[i];
-        // Remove o prefixo data:image/jpeg;base64, para obter apenas os dados base64
         const base64Data = frameData.replace(/^data:image\/[a-z]+;base64,/, '');
-        framesFolder?.file(`frame_${(i + 1).toString().padStart(2, '0')}.jpg`, base64Data, { base64: true });
+        
+        // Nomes descritivos para Windows/iOS
+        const frameNumber = (i + 1).toString().padStart(2, '0');
+        const timestamp = `${String(Math.floor((i * 15) / 60)).padStart(2, '0')}-${String((i * 15) % 60).padStart(2, '0')}`;
+        framesFolder?.file(`Frame_${frameNumber}_Tempo_${timestamp}.jpg`, base64Data, { base64: true });
       }
       
       // Cria relatório HTML detalhado
@@ -156,8 +166,19 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
         </div>
         
         <div class="frames-note">
-            <strong>📁 Frames Extraídos:</strong> Os ${results.frames.length} frames capturados do vídeo estão disponíveis na pasta "frames" deste arquivo ZIP. 
-            Cada frame foi salvo em alta qualidade (JPEG) e numerado sequencialmente para facilitar a análise.
+            <strong>📁 Arquivos Incluídos neste ZIP:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px; list-style-type: none;">
+                <li>🎥 <strong>Vídeo Original:</strong> video_original_${formData.numeroSerie}.mp4 ${videoBlob ? `(${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)` : '(incluído)'}</li>
+                <li>🖼️ <strong>Frames Extraídos:</strong> ${results.frames.length} imagens JPEG na pasta "frames_extraidos/"</li>
+                <li>📄 <strong>Relatório HTML:</strong> relatorio.html (abra no navegador)</li>
+                <li>📊 <strong>Dados JSON:</strong> dados.json (para sistemas externos)</li>
+            </ul>
+            <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 5px;">
+                <strong>💡 Como usar os arquivos:</strong>
+                <br/>• <strong>Windows:</strong> Descompacte com WinRAR/7-Zip e abra relatorio.html
+                <br/>• <strong>iOS:</strong> Use app Files, toque no ZIP para extrair
+                <br/>• <strong>Frames:</strong> Cada imagem tem timestamp no nome para fácil identificação
+            </div>
         </div>
     </div>
 

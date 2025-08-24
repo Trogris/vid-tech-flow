@@ -81,6 +81,7 @@ const Index = () => {
             formData={formData}
             results={results}
             onNewAnalysis={handleNewAnalysis}
+            videoBlob={videoBlob}
           />
         ) : null;
       
