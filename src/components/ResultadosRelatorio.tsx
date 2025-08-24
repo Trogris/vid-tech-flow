@@ -314,11 +314,36 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
           </div>
         </div>
 
+        {/* Vídeo Original */}
+        {videoBlob && (
+          <div className="card-soft p-6 mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Vídeo Original
+            </h2>
+            
+            <div className="bg-black rounded-lg overflow-hidden">
+              <video
+                src={URL.createObjectURL(videoBlob)}
+                controls
+                className="w-full max-h-96 object-contain"
+                preload="metadata"
+              />
+            </div>
+            
+            <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+              <span>📁 Tamanho: {(videoBlob.size / (1024 * 1024)).toFixed(2)} MB</span>
+              <span>⏱ Duração: {formatDuration(results.analysis.duration)}</span>
+              <span>📐 Resolução: {results.analysis.resolution}</span>
+            </div>
+          </div>
+        )}
+
         {/* Galeria de frames */}
         <div className="card-soft p-6 mb-6">
           <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Image className="w-5 h-5" />
-            Frames Extraídos
+            Frames Extraídos do Vídeo
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -327,23 +352,26 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
                 <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
                   <img
                     src={frame}
-                    alt={`Frame ${index + 1}`}
+                    alt={`Frame ${index + 1} extraído do vídeo`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-                    onError={(e) => {
-                      console.error(`Erro ao carregar frame ${index + 1}:`, e);
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.parentElement!.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center bg-muted">
-                          <div class="text-center">
-                            <div class="text-muted-foreground text-xs">Frame ${index + 1}</div>
-                            <div class="text-muted-foreground text-xs">Erro ao carregar</div>
-                          </div>
+                    onClick={() => {
+                      // Abre frame em tela cheia
+                      const modal = document.createElement('div');
+                      modal.className = 'fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4';
+                      modal.innerHTML = `
+                        <div class="relative max-w-4xl max-h-full">
+                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg" />
+                          <button class="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70">
+                            ✕
+                          </button>
                         </div>
                       `;
-                    }}
-                    onLoad={() => {
-                      console.log(`Frame ${index + 1} carregado com sucesso`);
+                      modal.onclick = (e) => {
+                        if (e.target === modal || e.target === modal.querySelector('button')) {
+                          document.body.removeChild(modal);
+                        }
+                      };
+                      document.body.appendChild(modal);
                     }}
                   />
                 </div>

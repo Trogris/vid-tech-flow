@@ -61,17 +61,28 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // Gera resultados simulados
-    const mockFrames = generateMockFrames();
+    // Extrai frames reais do vídeo
+    const realFrames = await extractRealFrames();
+    
+    // Cria elemento de vídeo temporário para obter metadados
+    const tempVideo = document.createElement('video');
+    tempVideo.src = URL.createObjectURL(videoBlob);
+    
+    await new Promise(resolve => {
+      tempVideo.onloadedmetadata = resolve;
+    });
+    
     const results: ProcessingResults = {
-      frames: mockFrames,
+      frames: realFrames,
       analysis: {
-        duration: Math.floor(Math.random() * 300) + 30, // 30-330 segundos
+        duration: Math.floor(tempVideo.duration),
         frameCount: 10,
-        resolution: '1920x1080',
+        resolution: `${tempVideo.videoWidth}x${tempVideo.videoHeight}`,
         fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
       }
     };
+    
+    URL.revokeObjectURL(tempVideo.src);
 
     setIsProcessing(false);
     
@@ -81,85 +92,70 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
     }, 1000);
   };
 
-  const generateMockFrames = (): string[] => {
-    // Gera 10 frames simulados otimizados para download
-    const scenarios = [
-      { bg: '#2563EB', accent: '#60A5FA', label: 'Início da Gravação' },
-      { bg: '#059669', accent: '#34D399', label: 'Equipamento Visível' },
-      { bg: '#DC2626', accent: '#F87171', label: 'Problema Identificado' },
-      { bg: '#7C3AED', accent: '#A78BFA', label: 'Processo de Reparo' },
-      { bg: '#EA580C', accent: '#FB923C', label: 'Ferramenta em Uso' },
-      { bg: '#0891B2', accent: '#22D3EE', label: 'Teste Funcional' },
-      { bg: '#65A30D', accent: '#A3E635', label: 'Conexões Verificadas' },
-      { bg: '#C2410C', accent: '#FDBA74', label: 'Resultado do Teste' },
-      { bg: '#BE185D', accent: '#F472B6', label: 'Documentação' },
-      { bg: '#4338CA', accent: '#818CF8', label: 'Finalização' }
-    ];
-    
-    return scenarios.map((scenario, index) => {
-      // Canvas menor para reduzir tamanho do arquivo
-      const canvas = document.createElement('canvas');
-      canvas.width = 480;  // Reduzido de 640
-      canvas.height = 270; // Reduzido de 360
-      const ctx = canvas.getContext('2d');
+  const extractRealFrames = async (): Promise<string[]> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
       
-      if (ctx) {
-        // Fundo gradiente otimizado
-        const gradient = ctx.createRadialGradient(
-          canvas.width/2, canvas.height/2, 0,
-          canvas.width/2, canvas.height/2, canvas.width/2
-        );
-        gradient.addColorStop(0, scenario.bg);
-        gradient.addColorStop(1, scenario.bg + '40');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Elementos visuais técnicos
-        ctx.strokeStyle = scenario.accent;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        
-        // Grid técnico
-        for (let i = 0; i < 5; i++) {
-          const x = (canvas.width / 4) * (i + 1);
-          ctx.beginPath();
-          ctx.moveTo(x, 20);
-          ctx.lineTo(x, canvas.height - 20);
-          ctx.stroke();
-        }
-        
-        ctx.setLineDash([]);
-        
-        // Círculo central
-        ctx.fillStyle = scenario.accent + '30';
-        ctx.beginPath();
-        ctx.arc(canvas.width/2, canvas.height/2, 60, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Número do frame
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 36px Arial';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-        ctx.shadowBlur = 3;
-        ctx.fillText((index + 1).toString(), canvas.width / 2, canvas.height / 2 + 12);
-        
-        // Descrição da cena
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(scenario.label, canvas.width / 2, canvas.height - 30);
-        
-        // Timestamp
-        const timestamp = `${String(Math.floor((index * 15) / 60)).padStart(2, '0')}:${String((index * 15) % 60).padStart(2, '0')}`;
-        ctx.font = '12px Arial';
-        ctx.fillStyle = scenario.accent;
-        ctx.fillText(`⏱ ${timestamp}`, canvas.width / 2, canvas.height - 10);
-        
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-      }
+      const videoURL = URL.createObjectURL(videoBlob);
+      video.src = videoURL;
       
-      // Qualidade reduzida para arquivos menores (0.6 em vez de 0.9)
-      return canvas.toDataURL('image/jpeg', 0.6);
+      const frames: string[] = [];
+      let frameCount = 0;
+      const totalFrames = 10;
+      
+      video.onloadedmetadata = () => {
+        const duration = video.duration;
+        const interval = duration / totalFrames;
+        
+        const captureFrame = () => {
+          if (frameCount >= totalFrames) {
+            URL.revokeObjectURL(videoURL);
+            resolve(frames);
+            return;
+          }
+          
+          const currentTime = frameCount * interval;
+          video.currentTime = currentTime;
+        };
+        
+        video.onseeked = () => {
+          // Cria canvas para capturar frame
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          const currentTime = frameCount * interval; // Move currentTime para cá
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Adiciona overlay com informações
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, 10, 200, 60);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Frame ${frameCount + 1}`, 20, 30);
+            
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+            ctx.font = '14px Arial';
+            ctx.fillText(`${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 50);
+            
+            // Converte para base64 com qualidade otimizada
+            const frameData = canvas.toDataURL('image/jpeg', 0.8);
+            frames.push(frameData);
+          }
+          
+          frameCount++;
+          setTimeout(captureFrame, 100); // Pequeno delay entre capturas
+        };
+        
+        captureFrame();
+      };
     });
   };
 
