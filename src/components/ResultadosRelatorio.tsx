@@ -342,6 +342,26 @@ ${results.frames.map((_, index) => {
                         />
                       </div>
                       
+                      {/* Botão de download individual para iPhone */}
+                      {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
+                        <div className="absolute top-2 right-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Criar link de download para o frame
+                              const link = document.createElement('a');
+                              link.href = frame;
+                              link.download = `frame_${String(index + 1).padStart(2, '0')}_${formData.numeroSerie}.jpg`;
+                              link.click();
+                            }}
+                            className="bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors"
+                            title="Baixar frame"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      
                       {/* Overlay com informações */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
                         <div className="text-white">
