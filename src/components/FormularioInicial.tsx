@@ -78,7 +78,7 @@ const FormularioInicial: React.FC<FormularioInicialProps> = ({ onNext }) => {
   };
 
   const isFormValid = Object.values(formData).every(value => value.trim()) && 
-                     Object.keys(errors).length === 0;
+                     Object.values(errors).every(error => !error);
 
   return (
     <div className="min-h-screen bg-background p-4 animate-fade-in">
