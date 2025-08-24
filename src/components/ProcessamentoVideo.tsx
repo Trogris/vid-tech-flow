@@ -224,15 +224,47 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
 
       const capture = (): string | null => {
         try {
+          // Verificações extras para iOS
+          if (video.readyState < 2) {
+            console.warn('Vídeo não está pronto para captura')
+            return null
+          }
+
           const w = video.videoWidth || 640
           const h = video.videoHeight || 360
+          
+          if (w === 0 || h === 0) {
+            console.warn('Dimensões inválidas do vídeo')
+            return null
+          }
+
           const canvas = document.createElement('canvas')
           canvas.width = w
           canvas.height = h
-          const ctx = canvas.getContext('2d')
+          const ctx = canvas.getContext('2d', { willReadFrequently: true })
           if (!ctx) return null
           
+          // Limpar canvas antes de desenhar
+          ctx.clearRect(0, 0, w, h)
+          
+          // Desenhar o vídeo no canvas
           ctx.drawImage(video, 0, 0, w, h)
+          
+          // Verificar se realmente capturou algo (iOS específico)
+          const imageData = ctx.getImageData(0, 0, Math.min(10, w), Math.min(10, h))
+          const pixels = imageData.data
+          let hasNonZeroPixels = false
+          for (let i = 0; i < pixels.length; i += 4) {
+            if (pixels[i] > 0 || pixels[i + 1] > 0 || pixels[i + 2] > 0) {
+              hasNonZeroPixels = true
+              break
+            }
+          }
+          
+          if (!hasNonZeroPixels) {
+            console.warn('Frame capturado está vazio/preto')
+            return null
+          }
 
           // Overlay informativo
           ctx.fillStyle = 'rgba(0,0,0,0.6)'
@@ -258,9 +290,32 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
       for (const t of times) {
         try {
           await seekTo(t)
-          await new Promise((r) => setTimeout(r, 100)) // Pausa maior entre frames para iOS
+          
+          // Aguardar vídeo estar realmente pronto (iOS específico)
+          await new Promise((resolve) => {
+            let attempts = 0
+            const checkReady = () => {
+              if (video.readyState >= 2 && video.videoWidth > 0) {
+                resolve(null)
+              } else if (attempts < 20) {
+                attempts++
+                setTimeout(checkReady, 50)
+              } else {
+                resolve(null) // Timeout, continuar mesmo assim
+              }
+            }
+            checkReady()
+          })
+          
           const data = capture()
-          if (data) frames.push(data)
+          if (data) {
+            frames.push(data)
+          } else {
+            // Se captura falhou, tentar uma vez mais após pausa
+            await new Promise((r) => setTimeout(r, 200))
+            const retryData = capture()
+            if (retryData) frames.push(retryData)
+          }
         } catch (error) {
           console.warn('Erro ao processar frame:', error)
           // Continua mesmo se um frame falhar

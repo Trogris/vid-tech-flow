@@ -35,38 +35,89 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
 
   const handleDownloadReport = async () => {
     try {
-      const zip = new JSZip();
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
-      // Adiciona o vídeo original se disponível
-      if (videoBlob) {
-        zip.file('video_original.mp4', videoBlob);
-      }
-      
-      // Adiciona os frames como arquivos JPEG
-      results.frames.forEach((frameData, index) => {
-        // Remove o prefixo data:image/jpeg;base64, e converte para blob
-        const base64Data = frameData.split(',')[1];
-        const binaryData = atob(base64Data);
-        const uint8Array = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          uint8Array[i] = binaryData.charCodeAt(i);
+      if (isIOS) {
+        // Abordagem específica para iOS - gerar arquivo menor e abrir em nova aba
+        const reportData = {
+          formData,
+          results,
+          timestamp: new Date().toISOString()
+        };
+        
+        const reportText = `RELATÓRIO DE ANÁLISE DE VÍDEO TÉCNICO
+===================================
+Data/Hora (Brasília): ${new Intl.DateTimeFormat('pt-BR', {
+          day: '2-digit',
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        }).format(new Date())}
+Técnico: ${formData.nomeTecnico}
+Nº de Série: ${formData.numeroSerie}
+Contrato: ${formData.contrato}
+Arquivo: video_original.mp4
+Duração (s): ${results.analysis.duration.toFixed(2)}
+
+FRAMES EXTRAÍDOS:
+${results.frames.map((_, index) => {
+          const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
+          const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
+          const timestamp = index * timePerFrame;
+          return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
+        }).join('\n')}
+        
+ATENÇÃO: No iOS, baixe individualmente os frames usando toque longo em cada imagem.`;
+
+        // Criar arquivo de texto simples para iOS
+        const textBlob = new Blob([reportText], { type: 'text/plain' });
+        const url = URL.createObjectURL(textBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `relatorio_${formData.numeroSerie}_${new Date().toISOString().slice(0, 10)}.txt`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        // Mostrar instruções específicas para iOS
+        alert('Relatório baixado! No iOS, você pode salvar os frames individualmente fazendo toque longo em cada imagem e selecionando "Salvar na Galeria".');
+        
+      } else {
+        // Abordagem padrão para outros navegadores
+        const zip = new JSZip();
+        
+        // Adiciona o vídeo original se disponível
+        if (videoBlob) {
+          zip.file('video_original.mp4', videoBlob);
         }
-        zip.file(`frame_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
-      });
-      
-      // Gera relatório TXT no formato específico solicitado
-      const now = new Date();
-      const brasiliaTZ = new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'America/Sao_Paulo'
-      }).format(now);
-      
-      const reportTXT = `RELATÓRIO DE ANÁLISE DE VÍDEO TÉCNICO
+        
+        // Adiciona os frames como arquivos JPEG
+        results.frames.forEach((frameData, index) => {
+          // Remove o prefixo data:image/jpeg;base64, e converte para blob
+          const base64Data = frameData.split(',')[1];
+          const binaryData = atob(base64Data);
+          const uint8Array = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            uint8Array[i] = binaryData.charCodeAt(i);
+          }
+          zip.file(`frame_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
+        });
+        
+        // Gera relatório TXT
+        const now = new Date();
+        const brasiliaTZ = new Intl.DateTimeFormat('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        }).format(now);
+        
+        const reportTXT = `RELATÓRIO DE ANÁLISE DE VÍDEO TÉCNICO
 ===================================
 Data/Hora (Brasília): ${brasiliaTZ}
 Técnico: ${formData.nomeTecnico}
@@ -77,29 +128,30 @@ Duração (s): ${results.analysis.duration.toFixed(2)}
 
 FRAMES EXTRAÍDOS:
 ${results.frames.map((_, index) => {
-  const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
-  const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
-  const timestamp = index * timePerFrame;
-  return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
-}).join('\n')}`;
-      
-      zip.file('relatorio.txt', reportTXT);
-      
-      // Gera o arquivo ZIP
-      const content = await zip.generateAsync({ type: 'blob' });
-      
-      // Download do arquivo
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `relatorio_video_${formData.numeroSerie}_${new Date().toISOString().slice(0, 10)}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Limpa a URL do objeto
-      setTimeout(() => {
-        URL.revokeObjectURL(link.href);
-      }, 100);
+          const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
+          const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
+          const timestamp = index * timePerFrame;
+          return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
+        }).join('\n')}`;
+        
+        zip.file('relatorio.txt', reportTXT);
+        
+        // Gera o arquivo ZIP
+        const content = await zip.generateAsync({ type: 'blob' });
+        
+        // Download do arquivo
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `relatorio_video_${formData.numeroSerie}_${new Date().toISOString().slice(0, 10)}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Limpa a URL do objeto
+        setTimeout(() => {
+          URL.revokeObjectURL(link.href);
+        }, 100);
+      }
       
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);

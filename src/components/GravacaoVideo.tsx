@@ -58,11 +58,31 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
   };
 
   const startRecording = async () => {
-    // Usar sempre API web para vídeo (funciona no iOS também)
     if (!stream) return;
 
     try {
-      const recorder = new MediaRecorder(stream);
+      // Configurações específicas para iOS compatibilidade
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const options: MediaRecorderOptions = {};
+      
+      if (isIOS) {
+        // Tentar MP4 primeiro no iOS
+        const supportedTypes = [
+          'video/mp4',
+          'video/mp4;codecs=h264',
+          'video/webm;codecs=vp8',
+          'video/webm'
+        ];
+        
+        for (const type of supportedTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            options.mimeType = type;
+            break;
+          }
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
@@ -73,7 +93,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
       };
 
       recorder.onstop = () => {
-        const videoBlob = new Blob(chunksRef.current, { type: 'video/webm' });
+        // Usar o tipo correto baseado na gravação
+        const mimeType = recorder.mimeType || 'video/mp4';
+        const videoBlob = new Blob(chunksRef.current, { type: mimeType });
         setRecordedVideo(videoBlob);
         
         if (recordedVideoRef.current) {
