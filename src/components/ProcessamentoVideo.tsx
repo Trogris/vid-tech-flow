@@ -76,7 +76,7 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
       frames: realFrames,
       analysis: {
         duration: Math.floor(tempVideo.duration),
-        frameCount: 10,
+        frameCount: realFrames.length,
         resolution: `${tempVideo.videoWidth}x${tempVideo.videoHeight}`,
         fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
       }
@@ -93,70 +93,106 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
   };
 
   const extractRealFrames = async (): Promise<string[]> => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.muted = true;
-      
-      const videoURL = URL.createObjectURL(videoBlob);
-      video.src = videoURL;
-      
-      const frames: string[] = [];
-      let frameCount = 0;
-      const totalFrames = 10;
-      
-      video.onloadedmetadata = () => {
-        const duration = video.duration;
-        const interval = duration / totalFrames;
-        
-        const captureFrame = () => {
-          if (frameCount >= totalFrames) {
-            URL.revokeObjectURL(videoURL);
-            resolve(frames);
-            return;
-          }
-          
-          const currentTime = frameCount * interval;
-          video.currentTime = currentTime;
-        };
-        
-        video.onseeked = () => {
-          // Cria canvas para capturar frame
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-          const currentTime = frameCount * interval; // Move currentTime para cá
-          
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Adiciona overlay com informações
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(10, 10, 200, 60);
-            
-            ctx.fillStyle = 'white';
-            ctx.font = '16px Arial';
-            ctx.fillText(`Frame ${frameCount + 1}`, 20, 30);
-            
-            const minutes = Math.floor(currentTime / 60);
-            const seconds = Math.floor(currentTime % 60);
-            ctx.font = '14px Arial';
-            ctx.fillText(`${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 50);
-            
-            // Converte para base64 com qualidade otimizada
-            const frameData = canvas.toDataURL('image/jpeg', 0.8);
-            frames.push(frameData);
-          }
-          
-          frameCount++;
-          setTimeout(captureFrame, 100); // Pequeno delay entre capturas
-        };
-        
-        captureFrame();
-      };
-    });
+    const video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.preload = 'metadata'
+    video.playsInline = true
+
+    const videoURL = URL.createObjectURL(videoBlob)
+    video.src = videoURL
+
+    // Helper: wait for a single event with timeout
+    const waitForEvent = (el: HTMLMediaElement, event: keyof HTMLMediaElementEventMap, timeout = 8000) =>
+      new Promise<void>((resolve) => {
+        const on = () => { cleanup(); resolve() }
+        const to = setTimeout(() => { cleanup(); resolve() }, timeout)
+        const cleanup = () => {
+          clearTimeout(to)
+          el.removeEventListener(event, on as any)
+        }
+        el.addEventListener(event, on as any, { once: true })
+      })
+
+    await waitForEvent(video, 'loadedmetadata', 8000)
+
+    // Resolve duration robustly (iOS/Safari can report Infinity/NaN)
+    let duration = video.duration
+    if (!Number.isFinite(duration) || duration <= 0) {
+      await new Promise<void>((resolve) => {
+        const onSeeked = () => { duration = video.duration; resolve() }
+        video.addEventListener('seeked', onSeeked, { once: true })
+        try { video.currentTime = 1e6 } catch { resolve() }
+        setTimeout(() => resolve(), 1000)
+      })
+      if (!Number.isFinite(duration) || duration <= 0) duration = 1 // fallback mínimo
+    }
+
+    const totalFrames: number = 10
+    const safeDuration = Math.max(0.05, duration)
+    const times = Array.from({ length: totalFrames }, (_, i) => {
+      if (totalFrames === 1) return 0
+      const t = (i / (totalFrames - 1)) * safeDuration
+      return Math.min(Math.max(0, t), safeDuration - 0.01)
+    })
+
+    const frames: string[] = []
+
+    const seekTo = (t: number) =>
+      new Promise<void>((resolve) => {
+        const onSeeked = () => { cleanup(); resolve() }
+        const onError = () => { cleanup(); resolve() }
+        const to = setTimeout(() => { cleanup(); resolve() }, 1500)
+        const cleanup = () => {
+          clearTimeout(to)
+          video.removeEventListener('seeked', onSeeked)
+          video.removeEventListener('error', onError)
+        }
+        try {
+          video.addEventListener('seeked', onSeeked)
+          video.addEventListener('error', onError)
+          if (Number.isFinite(t)) video.currentTime = t
+          else { cleanup(); resolve() }
+        } catch {
+          cleanup(); resolve()
+        }
+      })
+
+    const capture = (): string | null => {
+      const w = video.videoWidth || 640
+      const h = video.videoHeight || 360
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null
+      ctx.drawImage(video, 0, 0, w, h)
+
+      // Overlay informativo
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'
+      ctx.fillRect(10, 10, 200, 56)
+      ctx.fillStyle = '#fff'
+      ctx.font = '16px Arial'
+      const idx = frames.length + 1
+      ctx.fillText(`Frame ${idx}`, 20, 32)
+      const ct = Number.isFinite(video.currentTime) ? video.currentTime : 0
+      const minutes = Math.floor(ct / 60)
+      const seconds = Math.floor(ct % 60)
+      ctx.font = '14px Arial'
+      ctx.fillText(`${minutes}:${String(seconds).padStart(2, '0')}`, 20, 52)
+
+      return canvas.toDataURL('image/jpeg', 0.8)
+    }
+
+    for (const t of times) {
+      await seekTo(t)
+      const data = capture()
+      if (data) frames.push(data)
+      await new Promise((r) => setTimeout(r, 60))
+    }
+
+    URL.revokeObjectURL(videoURL)
+    return frames
   };
 
   const currentStepData = processSteps[currentStep];
