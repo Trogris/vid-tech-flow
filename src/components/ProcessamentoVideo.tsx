@@ -42,157 +42,238 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
   }, []);
 
   const simulateProcessing = async () => {
-    // Simula o processamento do vídeo
-    for (let i = 0; i < steps.length; i++) {
-      // Atualiza o passo atual
-      setCurrentStep(i);
-      
-      // Simula o progresso do passo atual
-      for (let progress = 0; progress <= 100; progress += 10) {
-        setProgress(progress);
-        await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      // Simula o processamento do vídeo
+      for (let i = 0; i < steps.length; i++) {
+        // Atualiza o passo atual
+        setCurrentStep(i);
+        
+        // Simula o progresso do passo atual
+        for (let progress = 0; progress <= 100; progress += 10) {
+          setProgress(progress);
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduzido para iOS
+        }
+        
+        // Marca o passo como completo
+        setProcessSteps(prev => prev.map((step, index) => 
+          index === i ? { ...step, completed: true } : step
+        ));
+        
+        await new Promise(resolve => setTimeout(resolve, 300)); // Reduzido para iOS
       }
+
+      // Extrai frames reais do vídeo
+      const realFrames = await extractRealFrames();
       
-      // Marca o passo como completo
-      setProcessSteps(prev => prev.map((step, index) => 
-        index === i ? { ...step, completed: true } : step
-      ));
+      // Cria elemento de vídeo temporário para obter metadados - Versão iOS-friendly
+      const tempVideo = document.createElement('video');
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'metadata';
+      tempVideo.crossOrigin = 'anonymous';
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const videoURL = URL.createObjectURL(videoBlob);
+      tempVideo.src = videoURL;
+      
+      // Promise mais robusta para iOS
+      const videoMetadata = await new Promise<{duration: number, width: number, height: number}>((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve({ duration: 30, width: 1920, height: 1080 }); // Fallback para iOS
+        }, 5000);
+        
+        const onLoadedMetadata = () => {
+          clearTimeout(timeout);
+          let duration = tempVideo.duration;
+          
+          // Tratamento especial para iOS onde duration pode ser Infinity/NaN
+          if (!Number.isFinite(duration) || duration <= 0) {
+            duration = 30; // Fallback duration
+          }
+          
+          resolve({
+            duration: duration,
+            width: tempVideo.videoWidth || 1920,
+            height: tempVideo.videoHeight || 1080
+          });
+        };
+        
+        tempVideo.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+        tempVideo.load(); // Force load for iOS
+      });
+      
+      const results: ProcessingResults = {
+        frames: realFrames,
+        analysis: {
+          duration: videoMetadata.duration,
+          frameCount: realFrames.length,
+          resolution: `${videoMetadata.width}x${videoMetadata.height}`,
+          fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
+        }
+      };
+      
+      URL.revokeObjectURL(videoURL);
+
+      setIsProcessing(false);
+      
+      // Aguarda um pouco antes de mostrar os resultados
+      setTimeout(() => {
+        onComplete(results);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Erro durante o processamento:', error);
+      
+      // Fallback em caso de erro - especialmente para iOS
+      const fallbackResults: ProcessingResults = {
+        frames: [], // Frames vazios para não quebrar
+        analysis: {
+          duration: 30,
+          frameCount: 0,
+          resolution: '1920x1080',
+          fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
+        }
+      };
+      
+      setIsProcessing(false);
+      onComplete(fallbackResults);
     }
-
-    // Extrai frames reais do vídeo
-    const realFrames = await extractRealFrames();
-    
-    // Cria elemento de vídeo temporário para obter metadados
-    const tempVideo = document.createElement('video');
-    tempVideo.src = URL.createObjectURL(videoBlob);
-    
-    await new Promise(resolve => {
-      tempVideo.onloadedmetadata = resolve;
-    });
-    
-    const results: ProcessingResults = {
-      frames: realFrames,
-      analysis: {
-        duration: Math.floor(tempVideo.duration),
-        frameCount: realFrames.length,
-        resolution: `${tempVideo.videoWidth}x${tempVideo.videoHeight}`,
-        fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
-      }
-    };
-    
-    URL.revokeObjectURL(tempVideo.src);
-
-    setIsProcessing(false);
-    
-    // Aguarda um pouco antes de mostrar os resultados
-    setTimeout(() => {
-      onComplete(results);
-    }, 1000);
   };
 
   const extractRealFrames = async (): Promise<string[]> => {
-    const video = document.createElement('video')
-    video.crossOrigin = 'anonymous'
-    video.muted = true
-    video.preload = 'metadata'
-    video.playsInline = true
+    try {
+      const video = document.createElement('video')
+      video.crossOrigin = 'anonymous'
+      video.muted = true
+      video.preload = 'metadata'
+      video.playsInline = true
 
-    const videoURL = URL.createObjectURL(videoBlob)
-    video.src = videoURL
+      const videoURL = URL.createObjectURL(videoBlob)
+      video.src = videoURL
 
-    // Helper: wait for a single event with timeout
-    const waitForEvent = (el: HTMLMediaElement, event: keyof HTMLMediaElementEventMap, timeout = 8000) =>
-      new Promise<void>((resolve) => {
-        const on = () => { cleanup(); resolve() }
-        const to = setTimeout(() => { cleanup(); resolve() }, timeout)
-        const cleanup = () => {
-          clearTimeout(to)
-          el.removeEventListener(event, on as any)
-        }
-        el.addEventListener(event, on as any, { once: true })
+      // Helper: wait for a single event with timeout - Otimizado para iOS
+      const waitForEvent = (el: HTMLMediaElement, event: keyof HTMLMediaElementEventMap, timeout = 5000) =>
+        new Promise<void>((resolve) => {
+          const on = () => { cleanup(); resolve() }
+          const to = setTimeout(() => { cleanup(); resolve() }, timeout)
+          const cleanup = () => {
+            clearTimeout(to)
+            el.removeEventListener(event, on as any)
+          }
+          el.addEventListener(event, on as any, { once: true })
+        })
+
+      await waitForEvent(video, 'loadedmetadata', 5000)
+
+      // Resolve duration robustly - Versão iOS-friendly
+      let duration = video.duration
+      if (!Number.isFinite(duration) || duration <= 0) {
+        // Tentativa mais suave para iOS sem usar valores extremos
+        await new Promise<void>((resolve) => {
+          const onSeeked = () => { 
+            duration = video.duration; 
+            resolve() 
+          }
+          const timeout = setTimeout(() => resolve(), 2000)
+          
+          video.addEventListener('seeked', onSeeked, { once: true })
+          
+          try { 
+            // Valor mais seguro para iOS ao invés de 1e6
+            video.currentTime = Math.min(60, video.duration || 30)
+          } catch { 
+            clearTimeout(timeout)
+            resolve() 
+          }
+        })
+        
+        if (!Number.isFinite(duration) || duration <= 0) duration = 30 // fallback padrão
+      }
+
+      const totalFrames: number = 10
+      const safeDuration = Math.max(1, duration) // Mínimo maior para iOS
+      const times = Array.from({ length: totalFrames }, (_, i) => {
+        if (totalFrames === 1) return 0
+        const t = (i / (totalFrames - 1)) * (safeDuration - 0.1) // Margem maior
+        return Math.min(Math.max(0, t), safeDuration - 0.1)
       })
 
-    await waitForEvent(video, 'loadedmetadata', 8000)
+      const frames: string[] = []
 
-    // Resolve duration robustly (iOS/Safari can report Infinity/NaN)
-    let duration = video.duration
-    if (!Number.isFinite(duration) || duration <= 0) {
-      await new Promise<void>((resolve) => {
-        const onSeeked = () => { duration = video.duration; resolve() }
-        video.addEventListener('seeked', onSeeked, { once: true })
-        try { video.currentTime = 1e6 } catch { resolve() }
-        setTimeout(() => resolve(), 1000)
-      })
-      if (!Number.isFinite(duration) || duration <= 0) duration = 1 // fallback mínimo
-    }
+      const seekTo = (t: number) =>
+        new Promise<void>((resolve) => {
+          const onSeeked = () => { cleanup(); resolve() }
+          const onError = () => { cleanup(); resolve() }
+          const to = setTimeout(() => { cleanup(); resolve() }, 2000) // Timeout maior para iOS
+          const cleanup = () => {
+            clearTimeout(to)
+            video.removeEventListener('seeked', onSeeked)
+            video.removeEventListener('error', onError)
+          }
+          try {
+            video.addEventListener('seeked', onSeeked)
+            video.addEventListener('error', onError)
+            if (Number.isFinite(t) && t >= 0) {
+              video.currentTime = t
+            } else { 
+              cleanup(); resolve() 
+            }
+          } catch {
+            cleanup(); resolve()
+          }
+        })
 
-    const totalFrames: number = 10
-    const safeDuration = Math.max(0.05, duration)
-    const times = Array.from({ length: totalFrames }, (_, i) => {
-      if (totalFrames === 1) return 0
-      const t = (i / (totalFrames - 1)) * safeDuration
-      return Math.min(Math.max(0, t), safeDuration - 0.01)
-    })
-
-    const frames: string[] = []
-
-    const seekTo = (t: number) =>
-      new Promise<void>((resolve) => {
-        const onSeeked = () => { cleanup(); resolve() }
-        const onError = () => { cleanup(); resolve() }
-        const to = setTimeout(() => { cleanup(); resolve() }, 1500)
-        const cleanup = () => {
-          clearTimeout(to)
-          video.removeEventListener('seeked', onSeeked)
-          video.removeEventListener('error', onError)
-        }
+      const capture = (): string | null => {
         try {
-          video.addEventListener('seeked', onSeeked)
-          video.addEventListener('error', onError)
-          if (Number.isFinite(t)) video.currentTime = t
-          else { cleanup(); resolve() }
-        } catch {
-          cleanup(); resolve()
+          const w = video.videoWidth || 640
+          const h = video.videoHeight || 360
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return null
+          
+          ctx.drawImage(video, 0, 0, w, h)
+
+          // Overlay informativo
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'
+          ctx.fillRect(10, 10, 200, 56)
+          ctx.fillStyle = '#fff'
+          ctx.font = '16px Arial'
+          const idx = frames.length + 1
+          ctx.fillText(`Frame ${idx}`, 20, 32)
+          const ct = Number.isFinite(video.currentTime) ? video.currentTime : 0
+          const minutes = Math.floor(ct / 60)
+          const seconds = Math.floor(ct % 60)
+          ctx.font = '14px Arial'
+          ctx.fillText(`${minutes}:${String(seconds).padStart(2, '0')}`, 20, 52)
+
+          return canvas.toDataURL('image/jpeg', 0.8)
+        } catch (error) {
+          console.warn('Erro ao capturar frame:', error)
+          return null
         }
-      })
+      }
 
-    const capture = (): string | null => {
-      const w = video.videoWidth || 640
-      const h = video.videoHeight || 360
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return null
-      ctx.drawImage(video, 0, 0, w, h)
+      // Processamento mais seguro dos frames para iOS
+      for (const t of times) {
+        try {
+          await seekTo(t)
+          await new Promise((r) => setTimeout(r, 100)) // Pausa maior entre frames para iOS
+          const data = capture()
+          if (data) frames.push(data)
+        } catch (error) {
+          console.warn('Erro ao processar frame:', error)
+          // Continua mesmo se um frame falhar
+        }
+      }
 
-      // Overlay informativo
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'
-      ctx.fillRect(10, 10, 200, 56)
-      ctx.fillStyle = '#fff'
-      ctx.font = '16px Arial'
-      const idx = frames.length + 1
-      ctx.fillText(`Frame ${idx}`, 20, 32)
-      const ct = Number.isFinite(video.currentTime) ? video.currentTime : 0
-      const minutes = Math.floor(ct / 60)
-      const seconds = Math.floor(ct % 60)
-      ctx.font = '14px Arial'
-      ctx.fillText(`${minutes}:${String(seconds).padStart(2, '0')}`, 20, 52)
-
-      return canvas.toDataURL('image/jpeg', 0.8)
+      URL.revokeObjectURL(videoURL)
+      return frames
+      
+    } catch (error) {
+      console.error('Erro na extração de frames:', error)
+      return [] // Retorna array vazio ao invés de falhar
     }
-
-    for (const t of times) {
-      await seekTo(t)
-      const data = capture()
-      if (data) frames.push(data)
-      await new Promise((r) => setTimeout(r, 60))
-    }
-
-    URL.revokeObjectURL(videoURL)
-    return frames
   };
 
   const currentStepData = processSteps[currentStep];
