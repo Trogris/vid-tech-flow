@@ -60,7 +60,7 @@ Técnico: ${formData.nomeTecnico}
 Nº de Série: ${formData.numeroSerie}
 Contrato: ${formData.contrato}
 Arquivo: video_original.mp4
-Duração (s): ${results.analysis.duration.toFixed(2)}
+Duração (s): ${results.analysis.duration.toFixed(1)}
 
 FRAMES EXTRAÍDOS:
 ${results.frames.map((_, index) => {
@@ -82,7 +82,7 @@ ATENÇÃO: No iOS, baixe individualmente os frames usando toque longo em cada im
         URL.revokeObjectURL(url);
         
         // Mostrar instruções específicas para iOS
-        alert('Relatório baixado! No iOS, você pode salvar os frames individualmente fazendo toque longo em cada imagem e selecionando "Salvar na Galeria".');
+        alert('Relatório baixado! Para salvar os frames no iPhone:\n1. Toque longo em cada imagem\n2. Selecione "Salvar na Galeria"\n3. Use o menu "Compartilhar" para salvar em "Arquivos"');
         
       } else {
         // Abordagem padrão para outros navegadores
@@ -124,7 +124,7 @@ Técnico: ${formData.nomeTecnico}
 Nº de Série: ${formData.numeroSerie}
 Contrato: ${formData.contrato}
 Arquivo: video_original.mp4
-Duração (s): ${results.analysis.duration.toFixed(2)}
+Duração (s): ${results.analysis.duration.toFixed(1)}
 
 FRAMES EXTRAÍDOS:
 ${results.frames.map((_, index) => {
@@ -302,7 +302,7 @@ ${results.frames.map((_, index) => {
                       </div>
                     </div>
                     
-                    {/* Imagem do frame */}
+                     {/* Imagem do frame */}
                     <div className="relative group cursor-pointer" onClick={() => {
                       // Modal para visualização em tela cheia
                       const modal = document.createElement('div');
@@ -335,6 +335,10 @@ ${results.frames.map((_, index) => {
                           alt={`Frame ${index + 1} extraído do vídeo no timestamp ${timestamp}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
+                          onContextMenu={(e) => {
+                            // Permitir menu de contexto para salvar imagem
+                            e.stopPropagation();
+                          }}
                         />
                       </div>
                       
@@ -364,14 +368,14 @@ ${results.frames.map((_, index) => {
             </div>
             
             {/* Resumo da galeria */}
-            <div className="bg-success/10 border border-success/20 rounded-lg p-4 mt-6">
+            <div className="bg-success border border-success/30 rounded-lg p-4 mt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-success rounded-full flex items-center justify-center">
-                  <Image className="w-5 h-5 text-success-foreground" />
+                <div className="w-10 h-10 bg-success-foreground rounded-full flex items-center justify-center">
+                  <Image className="w-5 h-5 text-success" />
                 </div>
                 <div>
                   <h3 className="font-medium text-success-foreground">Frames Extraídos com Sucesso</h3>
-                  <p className="text-sm text-success-foreground/80 mt-1">
+                  <p className="text-sm text-success-foreground/90 mt-1">
                     {results.frames.length} frames capturados automaticamente do vídeo original • Clique em qualquer frame para visualizar em tela cheia
                   </p>
                 </div>
@@ -380,6 +384,25 @@ ${results.frames.map((_, index) => {
           </div>
         </div>
 
+        {/* Instruções para iPhone */}
+        {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <Download className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="font-medium text-blue-900">Instruções para iPhone</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  • Pressione e segure cada imagem para salvar na Galeria<br/>
+                  • Use o botão "Compartilhar" para salvar em Arquivos<br/>
+                  • O relatório de texto será baixado automaticamente
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Ações */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
@@ -387,7 +410,7 @@ ${results.frames.map((_, index) => {
             className="btn-success flex items-center justify-center gap-2 px-8"
           >
             <Download className="w-5 h-5" />
-            Download Relatório ZIP
+            {/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'Baixar Relatório TXT' : 'Download Relatório ZIP'}
           </button>
           
           <button
