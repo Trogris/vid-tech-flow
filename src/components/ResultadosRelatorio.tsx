@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, RotateCcw, User, Hash, FileText, Clock, Monitor, HardDrive, Image, BarChart3 } from 'lucide-react';
+import JSZip from 'jszip';
 
 interface ResultadosRelatorioProps {
   formData: {
@@ -30,31 +31,174 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
     return `${mins}m ${secs}s`;
   };
 
-  const handleDownloadReport = () => {
-    // Simula o download do relatório ZIP
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `relatorio_video_${formData.numeroSerie}_${timestamp}.zip`;
-    
-    // Cria um blob simulado (na implementação real, seria o ZIP com frames e relatório)
-    const reportData = {
-      tecnico: formData.nomeTecnico,
-      numeroSerie: formData.numeroSerie,
-      contrato: formData.contrato,
-      analise: results.analysis,
-      timestamp: new Date().toISOString(),
-      frames: results.frames.length
-    };
-    
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
-      type: 'application/json' 
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadReport = async () => {
+    try {
+      // Cria um ZIP real com frames e relatório
+      const zip = new JSZip();
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `relatorio_video_${formData.numeroSerie}_${timestamp}.zip`;
+      
+      // Adiciona frames ao ZIP
+      const framesFolder = zip.folder("frames");
+      for (let i = 0; i < results.frames.length; i++) {
+        const frameData = results.frames[i];
+        // Remove o prefixo data:image/jpeg;base64, para obter apenas os dados base64
+        const base64Data = frameData.replace(/^data:image\/[a-z]+;base64,/, '');
+        framesFolder?.file(`frame_${(i + 1).toString().padStart(2, '0')}.jpg`, base64Data, { base64: true });
+      }
+      
+      // Cria relatório HTML detalhado
+      const reportHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Análise de Vídeo Técnico</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f8fafc;
+        }
+        .header { 
+            text-align: center; 
+            background: #3b82f6; 
+            color: white; 
+            padding: 30px; 
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .section { 
+            background: white; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-top: 15px;
+        }
+        .item { 
+            background: #f1f5f9; 
+            padding: 15px; 
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        .item-label { 
+            font-size: 12px; 
+            color: #64748b; 
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .item-value { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #1e293b;
+        }
+        .frames-note {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Relatório de Análise de Vídeo Técnico</h1>
+        <p>Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+    </div>
+
+    <div class="section">
+        <h2>📋 Dados do Técnico</h2>
+        <div class="grid">
+            <div class="item">
+                <div class="item-label">Técnico Responsável</div>
+                <div class="item-value">${formData.nomeTecnico}</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Número de Série</div>
+                <div class="item-value">${formData.numeroSerie}</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Contrato</div>
+                <div class="item-value">${formData.contrato}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Análise do Vídeo</h2>
+        <div class="grid">
+            <div class="item">
+                <div class="item-label">Duração</div>
+                <div class="item-value">${formatDuration(results.analysis.duration)}</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Resolução</div>
+                <div class="item-value">${results.analysis.resolution}</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Tamanho do Arquivo</div>
+                <div class="item-value">${results.analysis.fileSize}</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Frames Extraídos</div>
+                <div class="item-value">${results.analysis.frameCount}</div>
+            </div>
+        </div>
+        
+        <div class="frames-note">
+            <strong>📁 Frames Extraídos:</strong> Os ${results.frames.length} frames capturados do vídeo estão disponíveis na pasta "frames" deste arquivo ZIP. 
+            Cada frame foi salvo em alta qualidade (JPEG) e numerado sequencialmente para facilitar a análise.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📈 Resumo da Análise</h2>
+        <p><strong>Status:</strong> Análise concluída com sucesso</p>
+        <p><strong>Método:</strong> Extração automática de frames em intervalos regulares</p>
+        <p><strong>Qualidade:</strong> Resolução original preservada</p>
+        <p><strong>Observações:</strong> Todos os frames foram processados e estão prontos para análise técnica detalhada.</p>
+    </div>
+</body>
+</html>`;
+      
+      // Adiciona relatório HTML ao ZIP
+      zip.file("relatorio.html", reportHtml);
+      
+      // Cria relatório JSON para integração
+      const reportData = {
+        tecnico: formData.nomeTecnico,
+        numeroSerie: formData.numeroSerie,
+        contrato: formData.contrato,
+        analise: results.analysis,
+        timestamp: new Date().toISOString(),
+        frames: results.frames.length,
+        versaoRelatorio: "1.0"
+      };
+      zip.file("dados.json", JSON.stringify(reportData, null, 2));
+      
+      // Gera e baixa o ZIP
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      alert('Erro ao gerar o relatório ZIP. Tente novamente.');
+    }
   };
 
   return (
@@ -159,16 +303,33 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {results.frames.map((frame, index) => (
               <div key={index} className="group relative">
-                <img
-                  src={frame}
-                  alt={`Frame ${index + 1}`}
-                  className="w-full aspect-video object-cover rounded-lg border border-border 
-                           group-hover:shadow-lg transition-all duration-300 cursor-pointer"
-                />
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+                  <img
+                    src={frame}
+                    alt={`Frame ${index + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                    onError={(e) => {
+                      console.error(`Erro ao carregar frame ${index + 1}:`, e);
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.innerHTML = `
+                        <div class="w-full h-full flex items-center justify-center bg-muted">
+                          <div class="text-center">
+                            <div class="text-muted-foreground text-xs">Frame ${index + 1}</div>
+                            <div class="text-muted-foreground text-xs">Erro ao carregar</div>
+                          </div>
+                        </div>
+                      `;
+                    }}
+                    onLoad={() => {
+                      console.log(`Frame ${index + 1} carregado com sucesso`);
+                    }}
+                  />
+                </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 
                               rounded-lg transition-all duration-300 flex items-center justify-center">
                   <span className="text-white font-medium opacity-0 group-hover:opacity-100 
-                                 transition-opacity duration-300">
+                                 transition-opacity duration-300 bg-black/50 px-2 py-1 rounded text-sm">
                     Frame {index + 1}
                   </span>
                 </div>

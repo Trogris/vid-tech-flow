@@ -82,31 +82,60 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
   };
 
   const generateMockFrames = (): string[] => {
-    // Gera 10 frames simulados (cores sólidas para demonstração)
+    // Gera 10 frames simulados com mais detalhes visuais
     const colors = [
       '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
       '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
     ];
     
     return colors.map((color, index) => {
-      // Cria um canvas com cor sólida
+      // Cria um canvas com visual mais detalhado
       const canvas = document.createElement('canvas');
-      canvas.width = 320;
-      canvas.height = 180;
+      canvas.width = 640;
+      canvas.height = 360;
       const ctx = canvas.getContext('2d');
       
       if (ctx) {
-        ctx.fillStyle = color;
+        // Fundo gradiente
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, color + '80');
+        ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Adiciona texto do frame
+        // Adiciona formas decorativas
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 50, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.2, canvas.height * 0.8, 30, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Texto principal
         ctx.fillStyle = 'white';
-        ctx.font = '20px Arial';
+        ctx.font = 'bold 32px Arial';
         ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 4;
         ctx.fillText(`Frame ${index + 1}`, canvas.width / 2, canvas.height / 2);
+        
+        // Timestamp simulado
+        ctx.font = '18px Arial';
+        ctx.fillText(`${(index * 3).toString().padStart(2, '0')}:${((index * 7) % 60).toString().padStart(2, '0')}`, canvas.width / 2, canvas.height / 2 + 40);
+        
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        
+        // Bordas
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
       }
       
-      return canvas.toDataURL();
+      return canvas.toDataURL('image/jpeg', 0.9);
     });
   };
 
