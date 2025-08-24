@@ -35,190 +35,74 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
 
   const handleDownloadReport = async () => {
     try {
-      // Cria um ZIP otimizado com vídeo, frames e relatório
       const zip = new JSZip();
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `analise_tecnica_${formData.numeroSerie}_${timestamp}.zip`;
       
-      // 1. Adiciona o vídeo original (se disponível)
+      // Adiciona o vídeo original se disponível
       if (videoBlob) {
-        zip.file(`video_original_${formData.numeroSerie}.mp4`, videoBlob);
+        zip.file('video_original.mp4', videoBlob);
       }
       
-      // 2. Adiciona frames otimizados ao ZIP
-      const framesFolder = zip.folder("frames_extraidos");
-      for (let i = 0; i < results.frames.length; i++) {
-        const frameData = results.frames[i];
-        const base64Data = frameData.replace(/^data:image\/[a-z]+;base64,/, '');
-        
-        // Nomes descritivos para Windows/iOS
-        const frameNumber = (i + 1).toString().padStart(2, '0');
-        const timestamp = `${String(Math.floor((i * 15) / 60)).padStart(2, '0')}-${String((i * 15) % 60).padStart(2, '0')}`;
-        framesFolder?.file(`Frame_${frameNumber}_Tempo_${timestamp}.jpg`, base64Data, { base64: true });
-      }
+      // Adiciona os frames como arquivos JPEG
+      results.frames.forEach((frameData, index) => {
+        // Remove o prefixo data:image/jpeg;base64, e converte para blob
+        const base64Data = frameData.split(',')[1];
+        const binaryData = atob(base64Data);
+        const uint8Array = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          uint8Array[i] = binaryData.charCodeAt(i);
+        }
+        zip.file(`frame_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
+      });
       
-      // Cria relatório HTML detalhado
-      const reportHtml = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Análise de Vídeo Técnico</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background: #f8fafc;
-        }
-        .header { 
-            text-align: center; 
-            background: #3b82f6; 
-            color: white; 
-            padding: 30px; 
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        .section { 
-            background: white; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 15px; 
-            margin-top: 15px;
-        }
-        .item { 
-            background: #f1f5f9; 
-            padding: 15px; 
-            border-radius: 6px;
-            border-left: 4px solid #3b82f6;
-        }
-        .item-label { 
-            font-size: 12px; 
-            color: #64748b; 
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .item-value { 
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #1e293b;
-        }
-        .frames-note {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Relatório de Análise de Vídeo Técnico</h1>
-        <p>Gerado em ${new Date().toLocaleString('pt-BR')}</p>
-    </div>
+      // Gera relatório TXT no formato específico solicitado
+      const now = new Date();
+      const brasiliaTZ = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(now);
+      
+      const reportTXT = `RELATÓRIO DE ANÁLISE DE VÍDEO TÉCNICO
+===================================
+Data/Hora (Brasília): ${brasiliaTZ}
+Técnico: ${formData.nomeTecnico}
+Nº de Série: ${formData.numeroSerie}
+Contrato: ${formData.contrato}
+Arquivo: video_original.mp4
+Duração (s): ${results.analysis.duration.toFixed(2)}
 
-    <div class="section">
-        <h2>📋 Dados do Técnico</h2>
-        <div class="grid">
-            <div class="item">
-                <div class="item-label">Técnico Responsável</div>
-                <div class="item-value">${formData.nomeTecnico}</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Número de Série</div>
-                <div class="item-value">${formData.numeroSerie}</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Contrato</div>
-                <div class="item-value">${formData.contrato}</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>📊 Análise do Vídeo</h2>
-        <div class="grid">
-            <div class="item">
-                <div class="item-label">Duração</div>
-                <div class="item-value">${formatDuration(results.analysis.duration)}</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Resolução</div>
-                <div class="item-value">${results.analysis.resolution}</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Tamanho do Arquivo</div>
-                <div class="item-value">${results.analysis.fileSize}</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Frames Extraídos</div>
-                <div class="item-value">${results.analysis.frameCount}</div>
-            </div>
-        </div>
-        
-        <div class="frames-note">
-            <strong>📁 Arquivos Incluídos neste ZIP:</strong>
-            <ul style="margin-top: 10px; margin-left: 20px; list-style-type: none;">
-                <li>🎥 <strong>Vídeo Original:</strong> video_original_${formData.numeroSerie}.mp4 ${videoBlob ? `(${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)` : '(incluído)'}</li>
-                <li>🖼️ <strong>Frames Extraídos:</strong> ${results.frames.length} imagens JPEG na pasta "frames_extraidos/"</li>
-                <li>📄 <strong>Relatório HTML:</strong> relatorio.html (abra no navegador)</li>
-                <li>📊 <strong>Dados JSON:</strong> dados.json (para sistemas externos)</li>
-            </ul>
-            <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 5px;">
-                <strong>💡 Como usar os arquivos:</strong>
-                <br/>• <strong>Windows:</strong> Descompacte com WinRAR/7-Zip e abra relatorio.html
-                <br/>• <strong>iOS:</strong> Use app Files, toque no ZIP para extrair
-                <br/>• <strong>Frames:</strong> Cada imagem tem timestamp no nome para fácil identificação
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>📈 Resumo da Análise</h2>
-        <p><strong>Status:</strong> Análise concluída com sucesso</p>
-        <p><strong>Método:</strong> Extração automática de frames em intervalos regulares</p>
-        <p><strong>Qualidade:</strong> Resolução original preservada</p>
-        <p><strong>Observações:</strong> Todos os frames foram processados e estão prontos para análise técnica detalhada.</p>
-    </div>
-</body>
-</html>`;
+FRAMES EXTRAÍDOS:
+${results.frames.map((_, index) => {
+  const timePerFrame = results.analysis.duration / (results.frames.length - 1);
+  const timestamp = index * timePerFrame;
+  return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(1)}s`;
+}).join('\n')}`;
       
-      // Adiciona relatório HTML ao ZIP
-      zip.file("relatorio.html", reportHtml);
+      zip.file('relatorio.txt', reportTXT);
       
-      // Cria relatório JSON para integração
-      const reportData = {
-        tecnico: formData.nomeTecnico,
-        numeroSerie: formData.numeroSerie,
-        contrato: formData.contrato,
-        analise: results.analysis,
-        timestamp: new Date().toISOString(),
-        frames: results.frames.length,
-        versaoRelatorio: "1.0"
-      };
-      zip.file("dados.json", JSON.stringify(reportData, null, 2));
+      // Gera o arquivo ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
       
-      // Gera e baixa o ZIP
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Download do arquivo
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `relatorio_video_${formData.numeroSerie}_${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpa a URL do objeto
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+      }, 100);
       
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
-      alert('Erro ao gerar o relatório ZIP. Tente novamente.');
+      alert('Erro ao gerar o relatório. Tente novamente.');
     }
   };
 
