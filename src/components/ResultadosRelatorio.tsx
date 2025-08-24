@@ -77,9 +77,10 @@ Duração (s): ${results.analysis.duration.toFixed(2)}
 
 FRAMES EXTRAÍDOS:
 ${results.frames.map((_, index) => {
-  const timePerFrame = results.analysis.duration / (results.frames.length - 1);
+  const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
+  const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
   const timestamp = index * timePerFrame;
-  return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(1)}s`;
+  return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
 }).join('\n')}`;
       
       zip.file('relatorio.txt', reportTXT);
@@ -233,8 +234,11 @@ ${results.frames.map((_, index) => {
           <div className="space-y-4">
             {/* Grid principal de frames */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {results.frames.map((frame, index) => {
-                const timestamp = `${String(Math.floor((index * results.analysis.duration) / 10 / 60)).padStart(2, '0')}:${String(Math.floor((index * results.analysis.duration) / 10) % 60).padStart(2, '0')}`;
+{results.frames.map((frame, index) => {
+                const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
+                const per = results.frames.length > 1 ? effectiveDuration / (results.frames.length - 1) : 0;
+                const secs = index * per;
+                const timestamp = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(Math.floor(secs % 60)).padStart(2, '0')}`;
                 
                 return (
                   <div key={index} className="bg-white rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-lg transition-all duration-300">
