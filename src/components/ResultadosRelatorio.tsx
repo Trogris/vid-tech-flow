@@ -339,51 +339,104 @@ const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
           </div>
         )}
 
-        {/* Galeria de frames */}
+        {/* Prévia dos Frames Extraídos */}
         <div className="card-soft p-6 mb-6">
           <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Image className="w-5 h-5" />
             Frames Extraídos do Vídeo
           </h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {results.frames.map((frame, index) => (
-              <div key={index} className="group relative">
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
-                  <img
-                    src={frame}
-                    alt={`Frame ${index + 1} extraído do vídeo`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-                    onClick={() => {
-                      // Abre frame em tela cheia
+          <div className="space-y-4">
+            {/* Grid principal de frames */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.frames.map((frame, index) => {
+                const timestamp = `${String(Math.floor((index * results.analysis.duration) / 10 / 60)).padStart(2, '0')}:${String(Math.floor((index * results.analysis.duration) / 10) % 60).padStart(2, '0')}`;
+                
+                return (
+                  <div key={index} className="bg-white rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-lg transition-all duration-300">
+                    {/* Cabeçalho do frame */}
+                    <div className="bg-primary/5 px-4 py-2 border-b border-border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Frame {index + 1}</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">⏱ {timestamp}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Imagem do frame */}
+                    <div className="relative group cursor-pointer" onClick={() => {
+                      // Modal para visualização em tela cheia
                       const modal = document.createElement('div');
-                      modal.className = 'fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4';
+                      modal.className = 'fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4';
                       modal.innerHTML = `
-                        <div class="relative max-w-4xl max-h-full">
-                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg" />
-                          <button class="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70">
-                            ✕
+                        <div class="relative max-w-6xl max-h-full">
+                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="Frame ${index + 1} em tela cheia" />
+                          <div class="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
+                            <div class="font-medium">Frame ${index + 1}</div>
+                            <div class="text-sm opacity-80">Timestamp: ${timestamp}</div>
+                          </div>
+                          <button class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black/90 rounded-full p-3 transition-colors">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                           </button>
                         </div>
                       `;
                       modal.onclick = (e) => {
-                        if (e.target === modal || e.target === modal.querySelector('button')) {
+                        if (e.target === modal || e.target === modal.querySelector('button') || e.target === modal.querySelector('svg') || e.target === modal.querySelector('line')) {
                           document.body.removeChild(modal);
                         }
                       };
                       document.body.appendChild(modal);
-                    }}
-                  />
+                    }}>
+                      <div className="aspect-video bg-muted/30">
+                        <img
+                          src={frame}
+                          alt={`Frame ${index + 1} extraído do vídeo no timestamp ${timestamp}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+                      
+                      {/* Overlay com informações */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
+                        <div className="text-white">
+                          <div className="text-sm font-medium">Clique para ampliar</div>
+                          <div className="text-xs opacity-80">Resolução: {results.analysis.resolution}</div>
+                        </div>
+                        <div className="text-white text-right">
+                          <div className="text-xs opacity-80">#{index + 1}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Rodapé com informações técnicas */}
+                    <div className="px-4 py-3 bg-muted/20">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>📐 {results.analysis.resolution}</span>
+                        <span>🕐 {timestamp}</span>
+                        <span>📊 JPEG</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Resumo da galeria */}
+            <div className="bg-success/10 border border-success/20 rounded-lg p-4 mt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-success rounded-full flex items-center justify-center">
+                  <Image className="w-5 h-5 text-success-foreground" />
                 </div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 
-                              rounded-lg transition-all duration-300 flex items-center justify-center">
-                  <span className="text-white font-medium opacity-0 group-hover:opacity-100 
-                                 transition-opacity duration-300 bg-black/50 px-2 py-1 rounded text-sm">
-                    Frame {index + 1}
-                  </span>
+                <div>
+                  <h3 className="font-medium text-success-foreground">Frames Extraídos com Sucesso</h3>
+                  <p className="text-sm text-success-foreground/80 mt-1">
+                    {results.frames.length} frames capturados automaticamente do vídeo original • Clique em qualquer frame para visualizar em tela cheia
+                  </p>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
