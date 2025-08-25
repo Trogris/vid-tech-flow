@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Image, BarChart3, FileDown, CheckCircle } from 'lucide-react';
 
 interface ProcessamentoVideoProps {
-  videoBlob: Blob;
+  videoBlobAberto: Blob;
+  videoBlobFechado: Blob;
   onComplete: (results: ProcessingResults) => void;
 }
 
 interface ProcessingResults {
-  frames: string[];
+  framesAberto: string[];
+  framesFechado: string[];
   analysis: {
-    duration: number;
-    frameCount: number;
+    durationAberto: number;
+    durationFechado: number;
+    frameCountAberto: number;
+    frameCountFechado: number;
     resolution: string;
-    fileSize: string;
+    fileSizeAberto: string;
+    fileSizeFechado: string;
   };
 }
 
@@ -23,14 +28,15 @@ interface ProcessingStep {
   completed: boolean;
 }
 
-const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onComplete }) => {
+const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlobAberto, videoBlobFechado, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(true);
 
   const steps: ProcessingStep[] = [
-    { id: 'upload', label: 'Enviando vídeo', icon: Upload, completed: false },
-    { id: 'frames', label: 'Extraindo frames', icon: Image, completed: false },
+    { id: 'upload', label: 'Enviando vídeos', icon: Upload, completed: false },
+    { id: 'frames-aberto', label: 'Extraindo frames - Aberto', icon: Image, completed: false },
+    { id: 'frames-fechado', label: 'Extraindo frames - Fechado', icon: Image, completed: false },
     { id: 'analysis', label: 'Analisando conteúdo', icon: BarChart3, completed: false },
     { id: 'report', label: 'Gerando relatório', icon: FileDown, completed: false }
   ];
@@ -62,56 +68,29 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
         await new Promise(resolve => setTimeout(resolve, 300)); // Reduzido para iOS
       }
 
-      // Extrai frames reais do vídeo
-      const realFrames = await extractRealFrames();
+      // Extrai frames reais dos dois vídeos
+      const framesAberto = await extractRealFrames(videoBlobAberto, 'Aberto');
+      const framesFechado = await extractRealFrames(videoBlobFechado, 'Fechado');
       
-      // Cria elemento de vídeo temporário para obter metadados - Versão iOS-friendly
-      const tempVideo = document.createElement('video');
-      tempVideo.muted = true;
-      tempVideo.playsInline = true;
-      tempVideo.preload = 'metadata';
-      tempVideo.crossOrigin = 'anonymous';
-      
-      const videoURL = URL.createObjectURL(videoBlob);
-      tempVideo.src = videoURL;
-      
-      // Promise mais robusta para iOS
-      const videoMetadata = await new Promise<{duration: number, width: number, height: number}>((resolve) => {
-        const timeout = setTimeout(() => {
-          resolve({ duration: 30, width: 1920, height: 1080 }); // Fallback para iOS
-        }, 5000);
-        
-        const onLoadedMetadata = () => {
-          clearTimeout(timeout);
-          let duration = tempVideo.duration;
-          
-          // Tratamento especial para iOS onde duration pode ser Infinity/NaN
-          if (!Number.isFinite(duration) || duration <= 0) {
-            duration = 30; // Fallback duration
-          }
-          
-          resolve({
-            duration: duration,
-            width: tempVideo.videoWidth || 1920,
-            height: tempVideo.videoHeight || 1080
-          });
-        };
-        
-        tempVideo.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
-        tempVideo.load(); // Force load for iOS
-      });
+      // Cria elementos de vídeo temporários para obter metadados - Versão iOS-friendly
+      const [metadataAberto, metadataFechado] = await Promise.all([
+        getVideoMetadata(videoBlobAberto),
+        getVideoMetadata(videoBlobFechado)
+      ]);
       
       const results: ProcessingResults = {
-        frames: realFrames,
+        framesAberto,
+        framesFechado,
         analysis: {
-          duration: videoMetadata.duration,
-          frameCount: realFrames.length,
-          resolution: `${videoMetadata.width}x${videoMetadata.height}`,
-          fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
+          durationAberto: metadataAberto.duration,
+          durationFechado: metadataFechado.duration,
+          frameCountAberto: framesAberto.length,
+          frameCountFechado: framesFechado.length,
+          resolution: `${metadataAberto.width}x${metadataAberto.height}`,
+          fileSizeAberto: `${(videoBlobAberto.size / (1024 * 1024)).toFixed(2)} MB`,
+          fileSizeFechado: `${(videoBlobFechado.size / (1024 * 1024)).toFixed(2)} MB`
         }
       };
-      
-      URL.revokeObjectURL(videoURL);
 
       setIsProcessing(false);
       
@@ -125,12 +104,16 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
       
       // Fallback em caso de erro - especialmente para iOS
       const fallbackResults: ProcessingResults = {
-        frames: [], // Frames vazios para não quebrar
+        framesAberto: [],
+        framesFechado: [],
         analysis: {
-          duration: 30,
-          frameCount: 0,
+          durationAberto: 30,
+          durationFechado: 30,
+          frameCountAberto: 0,
+          frameCountFechado: 0,
           resolution: '1920x1080',
-          fileSize: `${(videoBlob.size / (1024 * 1024)).toFixed(2)} MB`
+          fileSizeAberto: `${(videoBlobAberto.size / (1024 * 1024)).toFixed(2)} MB`,
+          fileSizeFechado: `${(videoBlobFechado.size / (1024 * 1024)).toFixed(2)} MB`
         }
       };
       
@@ -139,7 +122,47 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
     }
   };
 
-  const extractRealFrames = async (): Promise<string[]> => {
+  const getVideoMetadata = (videoBlob: Blob): Promise<{duration: number, width: number, height: number}> => {
+    return new Promise((resolve) => {
+      const tempVideo = document.createElement('video');
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'metadata';
+      tempVideo.crossOrigin = 'anonymous';
+      
+      const videoURL = URL.createObjectURL(videoBlob);
+      tempVideo.src = videoURL;
+      
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(videoURL);
+        resolve({ duration: 30, width: 1920, height: 1080 }); // Fallback para iOS
+      }, 5000);
+      
+      const onLoadedMetadata = () => {
+        clearTimeout(timeout);
+        let duration = tempVideo.duration;
+        
+        // Tratamento especial para iOS onde duration pode ser Infinity/NaN
+        if (!Number.isFinite(duration) || duration <= 0) {
+          duration = 30; // Fallback duration
+        }
+        
+        const result = {
+          duration: duration,
+          width: tempVideo.videoWidth || 1920,
+          height: tempVideo.videoHeight || 1080
+        };
+        
+        URL.revokeObjectURL(videoURL);
+        resolve(result);
+      };
+      
+      tempVideo.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+      tempVideo.load(); // Force load for iOS
+    });
+  };
+
+  const extractRealFrames = async (videoBlob: Blob, etapa: string): Promise<string[]> => {
     try {
       const video = document.createElement('video')
       video.crossOrigin = 'anonymous'
@@ -272,7 +295,7 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlob, onCo
           ctx.fillStyle = '#fff'
           ctx.font = '16px Arial'
           const idx = frames.length + 1
-          ctx.fillText(`Frame ${idx}`, 20, 32)
+          ctx.fillText(`Frame ${idx} - ${etapa}`, 20, 32)
           const ct = Number.isFinite(video.currentTime) ? video.currentTime : 0
           const minutes = Math.floor(ct / 60)
           const seconds = Math.floor(ct % 60)

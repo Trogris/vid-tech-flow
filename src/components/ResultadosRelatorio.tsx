@@ -9,23 +9,29 @@ interface ResultadosRelatorioProps {
     contrato: string;
   };
   results: {
-    frames: string[];
+    framesAberto: string[];
+    framesFechado: string[];
     analysis: {
-      duration: number;
-      frameCount: number;
+      durationAberto: number;
+      durationFechado: number;
+      frameCountAberto: number;
+      frameCountFechado: number;
       resolution: string;
-      fileSize: string;
+      fileSizeAberto: string;
+      fileSizeFechado: string;
     };
   };
   onNewAnalysis: () => void;
-  videoBlob?: Blob; // Adiciona o vídeo original
+  videoBlobAberto?: Blob;
+  videoBlobFechado?: Blob;
 }
 
 const ResultadosRelatorio: React.FC<ResultadosRelatorioProps> = ({
   formData,
   results,
   onNewAnalysis,
-  videoBlob
+  videoBlobAberto,
+  videoBlobFechado
 }) => {
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -59,15 +65,33 @@ Data/Hora (Brasília): ${new Intl.DateTimeFormat('pt-BR', {
 Técnico: ${formData.nomeTecnico}
 Nº de Série: ${formData.numeroSerie}
 Contrato: ${formData.contrato}
-Arquivo: video_original.mp4
-Duração (s): ${results.analysis.duration.toFixed(1)}
 
-FRAMES EXTRAÍDOS:
-${results.frames.map((_, index) => {
-          const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
-          const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
+EQUIPAMENTO ABERTO:
+Arquivo: video_aberto.mp4
+Duração (s): ${results.analysis.durationAberto.toFixed(1)}
+Tamanho: ${results.analysis.fileSizeAberto}
+Frames: ${results.analysis.frameCountAberto}
+
+EQUIPAMENTO FECHADO:
+Arquivo: video_fechado.mp4
+Duração (s): ${results.analysis.durationFechado.toFixed(1)}
+Tamanho: ${results.analysis.fileSizeFechado}
+Frames: ${results.analysis.frameCountFechado}
+
+FRAMES EXTRAÍDOS - EQUIPAMENTO ABERTO:
+${results.framesAberto.map((_, index) => {
+          const effectiveDuration = Math.max(0, results.analysis.durationAberto - 0.01);
+          const timePerFrame = results.framesAberto.length > 1 ? (effectiveDuration / (results.framesAberto.length - 1)) : 0;
           const timestamp = index * timePerFrame;
-          return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
+          return `- Frame ${String(index + 1).padStart(2, '0')} - Aberto | t=${timestamp.toFixed(2)}s`;
+        }).join('\n')}
+
+FRAMES EXTRAÍDOS - EQUIPAMENTO FECHADO:
+${results.framesFechado.map((_, index) => {
+          const effectiveDuration = Math.max(0, results.analysis.durationFechado - 0.01);
+          const timePerFrame = results.framesFechado.length > 1 ? (effectiveDuration / (results.framesFechado.length - 1)) : 0;
+          const timestamp = index * timePerFrame;
+          return `- Frame ${String(index + 1).padStart(2, '0')} - Fechado | t=${timestamp.toFixed(2)}s`;
         }).join('\n')}
         
 ATENÇÃO: No iOS, baixe individualmente os frames usando toque longo em cada imagem.`;
@@ -88,21 +112,34 @@ ATENÇÃO: No iOS, baixe individualmente os frames usando toque longo em cada im
         // Abordagem padrão para outros navegadores
         const zip = new JSZip();
         
-        // Adiciona o vídeo original se disponível
-        if (videoBlob) {
-          zip.file('video_original.mp4', videoBlob);
+        // Adiciona os vídeos originais se disponíveis
+        if (videoBlobAberto) {
+          zip.file('video_aberto.mp4', videoBlobAberto);
+        }
+        if (videoBlobFechado) {
+          zip.file('video_fechado.mp4', videoBlobFechado);
         }
         
-        // Adiciona os frames como arquivos JPEG
-        results.frames.forEach((frameData, index) => {
-          // Remove o prefixo data:image/jpeg;base64, e converte para blob
+        // Adiciona os frames do equipamento aberto
+        results.framesAberto.forEach((frameData, index) => {
           const base64Data = frameData.split(',')[1];
           const binaryData = atob(base64Data);
           const uint8Array = new Uint8Array(binaryData.length);
           for (let i = 0; i < binaryData.length; i++) {
             uint8Array[i] = binaryData.charCodeAt(i);
           }
-          zip.file(`frame_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
+          zip.file(`frame_aberto_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
+        });
+
+        // Adiciona os frames do equipamento fechado
+        results.framesFechado.forEach((frameData, index) => {
+          const base64Data = frameData.split(',')[1];
+          const binaryData = atob(base64Data);
+          const uint8Array = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            uint8Array[i] = binaryData.charCodeAt(i);
+          }
+          zip.file(`frame_fechado_${String(index + 1).padStart(2, '0')}.jpg`, uint8Array);
         });
         
         // Gera relatório TXT
@@ -123,15 +160,33 @@ Data/Hora (Brasília): ${brasiliaTZ}
 Técnico: ${formData.nomeTecnico}
 Nº de Série: ${formData.numeroSerie}
 Contrato: ${formData.contrato}
-Arquivo: video_original.mp4
-Duração (s): ${results.analysis.duration.toFixed(1)}
 
-FRAMES EXTRAÍDOS:
-${results.frames.map((_, index) => {
-          const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
-          const timePerFrame = results.frames.length > 1 ? (effectiveDuration / (results.frames.length - 1)) : 0;
+EQUIPAMENTO ABERTO:
+Arquivo: video_aberto.mp4
+Duração (s): ${results.analysis.durationAberto.toFixed(1)}
+Tamanho: ${results.analysis.fileSizeAberto}
+Frames: ${results.analysis.frameCountAberto}
+
+EQUIPAMENTO FECHADO:
+Arquivo: video_fechado.mp4
+Duração (s): ${results.analysis.durationFechado.toFixed(1)}
+Tamanho: ${results.analysis.fileSizeFechado}
+Frames: ${results.analysis.frameCountFechado}
+
+FRAMES EXTRAÍDOS - EQUIPAMENTO ABERTO:
+${results.framesAberto.map((_, index) => {
+          const effectiveDuration = Math.max(0, results.analysis.durationAberto - 0.01);
+          const timePerFrame = results.framesAberto.length > 1 ? (effectiveDuration / (results.framesAberto.length - 1)) : 0;
           const timestamp = index * timePerFrame;
-          return `- Frame ${String(index + 1).padStart(2, '0')} | t=${timestamp.toFixed(2)}s`;
+          return `- Frame ${String(index + 1).padStart(2, '0')} - Aberto | t=${timestamp.toFixed(2)}s`;
+        }).join('\n')}
+
+FRAMES EXTRAÍDOS - EQUIPAMENTO FECHADO:
+${results.framesFechado.map((_, index) => {
+          const effectiveDuration = Math.max(0, results.analysis.durationFechado - 0.01);
+          const timePerFrame = results.framesFechado.length > 1 ? (effectiveDuration / (results.framesFechado.length - 1)) : 0;
+          const timestamp = index * timePerFrame;
+          return `- Frame ${String(index + 1).padStart(2, '0')} - Fechado | t=${timestamp.toFixed(2)}s`;
         }).join('\n')}`;
         
         zip.file('relatorio.txt', reportTXT);
@@ -209,109 +264,172 @@ ${results.frames.map((_, index) => {
           </div>
         </div>
 
-        {/* Análise do vídeo */}
-        <div className="card-soft p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Análise do Vídeo
-          </h2>
-          
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-              <Clock className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Duração</p>
-                <p className="font-medium text-foreground">{formatDuration(results.analysis.duration)}</p>
+        {/* Análise dos vídeos */}
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
+          {/* Equipamento Aberto */}
+          <div className="card-soft p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Equipamento Aberto
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Clock className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Duração</p>
+                  <p className="font-medium text-foreground">{formatDuration(results.analysis.durationAberto)}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <HardDrive className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Tamanho</p>
+                  <p className="font-medium text-foreground">{results.analysis.fileSizeAberto}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Image className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Frames</p>
+                  <p className="font-medium text-foreground">{results.analysis.frameCountAberto}</p>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Equipamento Fechado */}
+          <div className="card-soft p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Equipamento Fechado
+            </h2>
             
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-              <Monitor className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Resolução</p>
-                <p className="font-medium text-foreground">{results.analysis.resolution}</p>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Clock className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Duração</p>
+                  <p className="font-medium text-foreground">{formatDuration(results.analysis.durationFechado)}</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-              <HardDrive className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Tamanho</p>
-                <p className="font-medium text-foreground">{results.analysis.fileSize}</p>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <HardDrive className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Tamanho</p>
+                  <p className="font-medium text-foreground">{results.analysis.fileSizeFechado}</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-              <Image className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Frames</p>
-                <p className="font-medium text-foreground">{results.analysis.frameCount}</p>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Image className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Frames</p>
+                  <p className="font-medium text-foreground">{results.analysis.frameCountFechado}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Vídeo Original */}
-        {videoBlob && (
-          <div className="card-soft p-6 mb-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Vídeo Original
-            </h2>
-            
-            <div className="bg-black rounded-lg overflow-hidden">
-              <video
-                src={URL.createObjectURL(videoBlob)}
-                controls
-                className="w-full max-h-96 object-contain"
-                preload="metadata"
-              />
-            </div>
-            
-            <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-              <span>📁 Tamanho: {(videoBlob.size / (1024 * 1024)).toFixed(2)} MB</span>
-              <span>⏱ Duração: {formatDuration(results.analysis.duration)}</span>
-              <span>📐 Resolução: {results.analysis.resolution}</span>
+        {/* Resolução compartilhada */}
+        <div className="card-soft p-6 mb-6">
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg max-w-sm">
+            <Monitor className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Resolução</p>
+              <p className="font-medium text-foreground">{results.analysis.resolution}</p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Prévia dos Frames Extraídos */}
-        <div className="card-soft p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Image className="w-5 h-5" />
-            Frames Extraídos do Vídeo
-          </h2>
-          
-          <div className="space-y-4">
-            {/* Grid principal de frames */}
+        {/* Vídeos Originais */}
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
+          {videoBlobAberto && (
+            <div className="card-soft p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Vídeo - Equipamento Aberto
+              </h2>
+              
+              <div className="bg-black rounded-lg overflow-hidden">
+                <video
+                  src={URL.createObjectURL(videoBlobAberto)}
+                  controls
+                  className="w-full max-h-64 object-contain"
+                  preload="metadata"
+                />
+              </div>
+              
+              <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
+                <span>📁 Tamanho: {(videoBlobAberto.size / (1024 * 1024)).toFixed(2)} MB</span>
+                <span>⏱ Duração: {formatDuration(results.analysis.durationAberto)}</span>
+              </div>
+            </div>
+          )}
+
+          {videoBlobFechado && (
+            <div className="card-soft p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Vídeo - Equipamento Fechado
+              </h2>
+              
+              <div className="bg-black rounded-lg overflow-hidden">
+                <video
+                  src={URL.createObjectURL(videoBlobFechado)}
+                  controls
+                  className="w-full max-h-64 object-contain"
+                  preload="metadata"
+                />
+              </div>
+              
+              <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
+                <span>📁 Tamanho: {(videoBlobFechado.size / (1024 * 1024)).toFixed(2)} MB</span>
+                <span>⏱ Duração: {formatDuration(results.analysis.durationFechado)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Frames Extraídos */}
+        <div className="space-y-6">
+          {/* Frames Equipamento Aberto */}
+          <div className="card-soft p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Image className="w-5 h-5" />
+              Frames - Equipamento Aberto
+            </h2>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-{results.frames.map((frame, index) => {
-                const effectiveDuration = Math.max(0, results.analysis.duration - 0.01);
-                const per = results.frames.length > 1 ? effectiveDuration / (results.frames.length - 1) : 0;
+              {results.framesAberto.map((frame, index) => {
+                const effectiveDuration = Math.max(0, results.analysis.durationAberto - 0.01);
+                const per = results.framesAberto.length > 1 ? effectiveDuration / (results.framesAberto.length - 1) : 0;
                 const secs = index * per;
                 const timestamp = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(Math.floor(secs % 60)).padStart(2, '0')}`;
                 
                 return (
-                  <div key={index} className="bg-white rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-lg transition-all duration-300">
+                  <div key={`aberto-${index}`} className="bg-white rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-lg transition-all duration-300">
                     {/* Cabeçalho do frame */}
                     <div className="bg-primary/5 px-4 py-2 border-b border-border">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Frame {index + 1}</span>
+                        <span className="text-sm font-medium text-foreground">Frame {index + 1} - Aberto</span>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">⏱ {timestamp}</span>
                       </div>
                     </div>
                     
-                     {/* Imagem do frame */}
+                    {/* Imagem do frame */}
                     <div className="relative group cursor-pointer" onClick={() => {
-                      // Modal para visualização em tela cheia
                       const modal = document.createElement('div');
                       modal.className = 'fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4';
                       modal.innerHTML = `
                         <div class="relative max-w-6xl max-h-full">
-                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="Frame ${index + 1} em tela cheia" />
+                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="Frame ${index + 1} - Aberto em tela cheia" />
                           <div class="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
-                            <div class="font-medium">Frame ${index + 1}</div>
+                            <div class="font-medium">Frame ${index + 1} - Equipamento Aberto</div>
                             <div class="text-sm opacity-80">Timestamp: ${timestamp}</div>
                           </div>
                           <button class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black/90 rounded-full p-3 transition-colors">
@@ -332,13 +450,9 @@ ${results.frames.map((_, index) => {
                       <div className="aspect-video bg-muted/30">
                         <img
                           src={frame}
-                          alt={`Frame ${index + 1} extraído do vídeo no timestamp ${timestamp}`}
+                          alt={`Frame ${index + 1} - Equipamento Aberto no timestamp ${timestamp}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
-                          onContextMenu={(e) => {
-                            // Permitir menu de contexto para salvar imagem
-                            e.stopPropagation();
-                          }}
                         />
                       </div>
                       
@@ -348,10 +462,9 @@ ${results.frames.map((_, index) => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Criar link de download para o frame
                               const link = document.createElement('a');
                               link.href = frame;
-                              link.download = `frame_${String(index + 1).padStart(2, '0')}_${formData.numeroSerie}.jpg`;
+                              link.download = `frame_aberto_${String(index + 1).padStart(2, '0')}_${formData.numeroSerie}.jpg`;
                               link.click();
                             }}
                             className="bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors"
@@ -366,10 +479,7 @@ ${results.frames.map((_, index) => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
                         <div className="text-white">
                           <div className="text-sm font-medium">Clique para ampliar</div>
-                          <div className="text-xs opacity-80">Resolução: {results.analysis.resolution}</div>
-                        </div>
-                        <div className="text-white text-right">
-                          <div className="text-xs opacity-80">#{index + 1}</div>
+                          <div className="text-xs opacity-80">Equipamento Aberto</div>
                         </div>
                       </div>
                     </div>
@@ -386,23 +496,124 @@ ${results.frames.map((_, index) => {
                 );
               })}
             </div>
+          </div>
+
+          {/* Frames Equipamento Fechado */}
+          <div className="card-soft p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Image className="w-5 h-5" />
+              Frames - Equipamento Fechado
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.framesFechado.map((frame, index) => {
+                const effectiveDuration = Math.max(0, results.analysis.durationFechado - 0.01);
+                const per = results.framesFechado.length > 1 ? effectiveDuration / (results.framesFechado.length - 1) : 0;
+                const secs = index * per;
+                const timestamp = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(Math.floor(secs % 60)).padStart(2, '0')}`;
+                
+                return (
+                  <div key={`fechado-${index}`} className="bg-white rounded-lg shadow-sm border border-border overflow-hidden hover:shadow-lg transition-all duration-300">
+                    {/* Cabeçalho do frame */}
+                    <div className="bg-primary/5 px-4 py-2 border-b border-border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Frame {index + 1} - Fechado</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">⏱ {timestamp}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Imagem do frame */}
+                    <div className="relative group cursor-pointer" onClick={() => {
+                      const modal = document.createElement('div');
+                      modal.className = 'fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4';
+                      modal.innerHTML = `
+                        <div class="relative max-w-6xl max-h-full">
+                          <img src="${frame}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="Frame ${index + 1} - Fechado em tela cheia" />
+                          <div class="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
+                            <div class="font-medium">Frame ${index + 1} - Equipamento Fechado</div>
+                            <div class="text-sm opacity-80">Timestamp: ${timestamp}</div>
+                          </div>
+                          <button class="absolute top-4 right-4 text-white bg-black/70 hover:bg-black/90 rounded-full p-3 transition-colors">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        </div>
+                      `;
+                      modal.onclick = (e) => {
+                        if (e.target === modal || e.target === modal.querySelector('button') || e.target === modal.querySelector('svg') || e.target === modal.querySelector('line')) {
+                          document.body.removeChild(modal);
+                        }
+                      };
+                      document.body.appendChild(modal);
+                    }}>
+                      <div className="aspect-video bg-muted/30">
+                        <img
+                          src={frame}
+                          alt={`Frame ${index + 1} - Equipamento Fechado no timestamp ${timestamp}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+                      
+                      {/* Botão de download individual para iPhone */}
+                      {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
+                        <div className="absolute top-2 right-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const link = document.createElement('a');
+                              link.href = frame;
+                              link.download = `frame_fechado_${String(index + 1).padStart(2, '0')}_${formData.numeroSerie}.jpg`;
+                              link.click();
+                            }}
+                            className="bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition-colors"
+                            title="Baixar frame"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Overlay com informações */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
+                        <div className="text-white">
+                          <div className="text-sm font-medium">Clique para ampliar</div>
+                          <div className="text-xs opacity-80">Equipamento Fechado</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Rodapé com informações técnicas */}
+                    <div className="px-4 py-3 bg-muted/20">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>📐 {results.analysis.resolution}</span>
+                        <span>🕐 {timestamp}</span>
+                        <span>📊 JPEG</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
             
             {/* Resumo da galeria */}
             <div className="bg-success border border-success/30 rounded-lg p-4 mt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-success-foreground rounded-full flex items-center justify-center">
-                  <Image className="w-5 h-5 text-success" />
+                <div className="w-10 h-10 bg-success rounded-full flex items-center justify-center">
+                  <Image className="w-5 h-5 text-success-foreground" />
                 </div>
                 <div>
                   <h3 className="font-medium text-success-foreground">Frames Extraídos com Sucesso</h3>
                   <p className="text-sm text-success-foreground/90 mt-1">
-                    {results.frames.length} frames capturados automaticamente do vídeo original • Clique em qualquer frame para visualizar em tela cheia
+                    {results.analysis.frameCountAberto + results.analysis.frameCountFechado} frames capturados das duas etapas ({results.analysis.frameCountAberto} aberto + {results.analysis.frameCountFechado} fechado)
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
         {/* Instruções para iPhone */}
         {/iPhone|iPad|iPod/.test(navigator.userAgent) && (

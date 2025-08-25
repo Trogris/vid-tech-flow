@@ -4,14 +4,17 @@ import { Play, Square, Camera, RotateCcw, ArrowRight } from 'lucide-react';
 interface GravacaoVideoProps {
   onNext: (videoBlob: Blob) => void;
   onBack: () => void;
+  etapa: string;
+  descricao: string;
 }
 
-const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
+const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, descricao }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideo, setRecordedVideo] = useState<Blob | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const recordedVideoRef = useRef<HTMLVideoElement>(null);
@@ -61,6 +64,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
     if (!stream) return;
 
     try {
+      setIsExpanded(true); // Expandir a tela quando iniciar gravação
+      
       // Configurações específicas para iOS compatibilidade
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const options: MediaRecorderOptions = {};
@@ -120,6 +125,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setIsExpanded(false); // Retornar ao tamanho original quando finalizar
       
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -144,17 +150,17 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
 
   return (
     <div className="min-h-screen bg-background p-4 animate-fade-in">
-      <div className="max-w-md mx-auto pt-4">
+      <div className={`mx-auto pt-4 transition-all duration-500 ${isExpanded ? 'max-w-4xl' : 'max-w-md'}`}>
         <div className="card-soft p-6">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Gravação de Vídeo
+              {etapa}
             </h1>
             <p className="text-muted-foreground">
-              {recordedVideo ? 'Vídeo gravado com sucesso' : 'Grave o vídeo técnico'}
+              {recordedVideo ? 'Vídeo gravado com sucesso' : descricao}
             </p>
           </div>
 
@@ -166,7 +172,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack }) => {
 
           {/* Preview da câmera ou vídeo gravado */}
           <div className="relative mb-6">
-            <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+            <div className={`bg-muted rounded-lg overflow-hidden transition-all duration-500 ${
+              isExpanded ? 'aspect-video' : 'aspect-video'
+            }`}>
                {!recordedVideo ? (
                   <video
                     ref={videoRef}

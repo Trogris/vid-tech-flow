@@ -4,7 +4,7 @@ import GravacaoVideo from '@/components/GravacaoVideo';
 import ProcessamentoVideo from '@/components/ProcessamentoVideo';
 import ResultadosRelatorio from '@/components/ResultadosRelatorio';
 
-type Step = 'form' | 'recording' | 'processing' | 'results';
+type Step = 'form' | 'recording-aberto' | 'recording-fechado' | 'processing' | 'results';
 
 interface FormData {
   nomeTecnico: string;
@@ -13,33 +13,47 @@ interface FormData {
 }
 
 interface ProcessingResults {
-  frames: string[];
+  framesAberto: string[];
+  framesFechado: string[];
   analysis: {
-    duration: number;
-    frameCount: number;
+    durationAberto: number;
+    durationFechado: number;
+    frameCountAberto: number;
+    frameCountFechado: number;
     resolution: string;
-    fileSize: string;
+    fileSizeAberto: string;
+    fileSizeFechado: string;
   };
 }
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<Step>('form');
   const [formData, setFormData] = useState<FormData | null>(null);
-  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoBlobAberto, setVideoBlobAberto] = useState<Blob | null>(null);
+  const [videoBlobFechado, setVideoBlobFechado] = useState<Blob | null>(null);
   const [results, setResults] = useState<ProcessingResults | null>(null);
 
   const handleFormNext = (data: FormData) => {
     setFormData(data);
-    setCurrentStep('recording');
+    setCurrentStep('recording-aberto');
   };
 
-  const handleRecordingNext = (blob: Blob) => {
-    setVideoBlob(blob);
+  const handleRecordingAbertoNext = (blob: Blob) => {
+    setVideoBlobAberto(blob);
+    setCurrentStep('recording-fechado');
+  };
+
+  const handleRecordingFechadoNext = (blob: Blob) => {
+    setVideoBlobFechado(blob);
     setCurrentStep('processing');
   };
 
-  const handleRecordingBack = () => {
+  const handleRecordingAbertoBack = () => {
     setCurrentStep('form');
+  };
+
+  const handleRecordingFechadoBack = () => {
+    setCurrentStep('recording-aberto');
   };
 
   const handleProcessingComplete = (processingResults: ProcessingResults) => {
@@ -50,7 +64,8 @@ const Index = () => {
   const handleNewAnalysis = () => {
     setCurrentStep('form');
     setFormData(null);
-    setVideoBlob(null);
+    setVideoBlobAberto(null);
+    setVideoBlobFechado(null);
     setResults(null);
   };
 
@@ -59,18 +74,31 @@ const Index = () => {
       case 'form':
         return <FormularioInicial onNext={handleFormNext} />;
       
-      case 'recording':
+      case 'recording-aberto':
         return (
           <GravacaoVideo 
-            onNext={handleRecordingNext} 
-            onBack={handleRecordingBack}
+            onNext={handleRecordingAbertoNext} 
+            onBack={handleRecordingAbertoBack}
+            etapa="Equipamento Aberto"
+            descricao="Grave o vídeo com o equipamento aberto"
+          />
+        );
+      
+      case 'recording-fechado':
+        return (
+          <GravacaoVideo 
+            onNext={handleRecordingFechadoNext} 
+            onBack={handleRecordingFechadoBack}
+            etapa="Equipamento Fechado"
+            descricao="Grave o vídeo com o equipamento fechado"
           />
         );
       
       case 'processing':
-        return videoBlob ? (
+        return videoBlobAberto && videoBlobFechado ? (
           <ProcessamentoVideo 
-            videoBlob={videoBlob} 
+            videoBlobAberto={videoBlobAberto}
+            videoBlobFechado={videoBlobFechado}
             onComplete={handleProcessingComplete}
           />
         ) : null;
@@ -81,7 +109,8 @@ const Index = () => {
             formData={formData}
             results={results}
             onNewAnalysis={handleNewAnalysis}
-            videoBlob={videoBlob}
+            videoBlobAberto={videoBlobAberto}
+            videoBlobFechado={videoBlobFechado}
           />
         ) : null;
       
