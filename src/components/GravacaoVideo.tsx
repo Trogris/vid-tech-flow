@@ -173,6 +173,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     }
   };
 
+  console.log('GravacaoVideo rendering - stream:', !!stream, 'error:', error, 'isExpanded:', isExpanded);
+  
   return (
     <div className={`min-h-screen bg-background animate-fade-in transition-all duration-500 ${
       isExpanded ? 'p-2' : 'p-4'
