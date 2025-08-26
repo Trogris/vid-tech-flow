@@ -96,11 +96,13 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   const startRecording = async () => {
-    console.log('🎬 START RECORDING CALLED');
+    console.log('🎬 START RECORDING CALLED - Version Web Test');
     console.log('🎬 Stream available:', !!stream);
     console.log('🎬 IsMobile:', isMobile);
     console.log('🎬 Platform:', navigator.platform);
     console.log('🎬 UserAgent:', navigator.userAgent);
+    console.log('🎬 Window size:', window.innerWidth, 'x', window.innerHeight);
+    console.log('🎬 Browser:', /Chrome|Firefox|Safari|Edge/.exec(navigator.userAgent)?.[0] || 'Unknown');
     
     if (!stream) {
       console.error('❌ CRITICAL: No stream available');
@@ -228,10 +230,17 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       
     } catch (err) {
       console.error('❌ CRITICAL ERROR in startRecording:', err);
-      console.error('❌ Error name:', err.name);
-      console.error('❌ Error message:', err.message);
-      console.error('❌ Error stack:', err.stack);
-      setError(`Erro ao iniciar gravação: ${err.message}`);
+      console.error('❌ Error name:', err?.name);
+      console.error('❌ Error message:', err?.message);
+      console.error('❌ Error stack:', err?.stack);
+      console.error('❌ Component state at error:', {
+        isRecording,
+        hasStream: !!stream,
+        hasError: !!error,
+        isMobile,
+        recordedVideo: !!recordedVideo
+      });
+      setError(`Erro ao iniciar gravação: ${err?.message || 'Erro desconhecido'}`);
       setIsRecording(false);
     }
   };
