@@ -38,18 +38,44 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
   const initializeCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' } // Preferência pela câmera traseira
-      });
+      // Configuração mais flexível para web e mobile
+      const constraints = {
+        video: {
+          // Tentar câmera traseira primeiro, fallback para qualquer câmera
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Garantir que o vídeo seja reproduzido
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(console.error);
+        };
       }
       setError('');
     } catch (err) {
       console.error('Erro ao acessar a câmera:', err);
-      setError('Não foi possível acessar a câmera. Verifique as permissões.');
+      // Tentar novamente com configurações mais básicas
+      try {
+        const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(basicStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = basicStream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play().catch(console.error);
+          };
+        }
+        setError('');
+      } catch (basicErr) {
+        console.error('Erro ao acessar câmera com configurações básicas:', basicErr);
+        setError('Não foi possível acessar a câmera. Verifique as permissões.');
+      }
     }
   };
 
