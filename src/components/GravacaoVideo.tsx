@@ -96,26 +96,41 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   const startRecording = async () => {
-    if (!stream) return;
+    console.log('🎬 START RECORDING CALLED');
+    console.log('🎬 Stream available:', !!stream);
+    console.log('🎬 IsMobile:', isMobile);
+    console.log('🎬 Platform:', navigator.platform);
+    console.log('🎬 UserAgent:', navigator.userAgent);
+    
+    if (!stream) {
+      console.error('❌ CRITICAL: No stream available');
+      setError('Camera não está disponível. Recarregue a página.');
+      return;
+    }
 
     try {
-      console.log('Starting recording, isMobile:', isMobile, 'userAgent:', navigator.userAgent)
+      console.log('🎬 Starting recording process...');
       
       // Expandir tela APENAS no mobile (dispositivos reais)
-      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      console.log('📱 Device detection:', { isMobile, isRealMobile });
+      
       if (isMobile && isRealMobile) {
-        console.log('Expanding for mobile device')
+        console.log('📱 Expanding for mobile device');
         setIsExpanded(true);
       } else {
-        console.log('Not expanding - PC or tablet')
+        console.log('🖥️ Not expanding - PC or tablet');
         setIsExpanded(false);
       }
       
       // Configurações específicas para iOS compatibilidade
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      console.log('🍎 iOS detected:', isIOS);
+      
       const options: MediaRecorderOptions = {};
       
       if (isIOS) {
+        console.log('🍎 Setting up iOS-specific MIME types');
         // Tentar MP4 primeiro no iOS
         const supportedTypes = [
           'video/mp4',
@@ -125,44 +140,99 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         ];
         
         for (const type of supportedTypes) {
+          console.log('🔍 Testing MIME type:', type, 'Supported:', MediaRecorder.isTypeSupported(type));
           if (MediaRecorder.isTypeSupported(type)) {
             options.mimeType = type;
+            console.log('✅ Selected MIME type:', type);
+            break;
+          }
+        }
+      } else {
+        // Test common web formats
+        const webTypes = [
+          'video/webm;codecs=vp9',
+          'video/webm;codecs=vp8',
+          'video/webm',
+          'video/mp4'
+        ];
+        
+        for (const type of webTypes) {
+          console.log('🔍 Testing web MIME type:', type, 'Supported:', MediaRecorder.isTypeSupported(type));
+          if (MediaRecorder.isTypeSupported(type)) {
+            options.mimeType = type;
+            console.log('✅ Selected web MIME type:', type);
             break;
           }
         }
       }
 
+      console.log('📹 Final MediaRecorder options:', options);
+      console.log('📹 Creating MediaRecorder...');
+      
       const recorder = new MediaRecorder(stream, options);
+      console.log('✅ MediaRecorder created successfully');
+      
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
+        console.log('📊 Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       recorder.onstop = () => {
+        console.log('🛑 Recording stopped');
+        console.log('📦 Total chunks:', chunksRef.current.length);
+        
         // Usar o tipo correto baseado na gravação
         const mimeType = recorder.mimeType || 'video/mp4';
+        console.log('🎞️ Creating blob with type:', mimeType);
+        
         const videoBlob = new Blob(chunksRef.current, { type: mimeType });
+        console.log('✅ Video blob created:', videoBlob.size, 'bytes');
+        
         setRecordedVideo(videoBlob);
         
         if (recordedVideoRef.current) {
           recordedVideoRef.current.src = URL.createObjectURL(videoBlob);
+          console.log('🎥 Video preview set');
         }
       };
 
+      recorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event);
+        setError('Erro durante a gravação');
+        setIsRecording(false);
+      };
+
+      console.log('📹 Starting MediaRecorder...');
       recorder.start();
+      console.log('✅ MediaRecorder started successfully');
+      
       setIsRecording(true);
       setRecordingTime(0);
+      setError('');
       
+      console.log('⏱️ Starting timer...');
       intervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          console.log('⏱️ Recording time:', newTime);
+          return newTime;
+        });
       }, 1000);
+      
+      console.log('✅ Recording setup complete');
+      
     } catch (err) {
-      console.error('Erro ao iniciar gravação:', err);
-      setError('Erro ao iniciar a gravação.');
+      console.error('❌ CRITICAL ERROR in startRecording:', err);
+      console.error('❌ Error name:', err.name);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Error stack:', err.stack);
+      setError(`Erro ao iniciar gravação: ${err.message}`);
+      setIsRecording(false);
     }
   };
 
