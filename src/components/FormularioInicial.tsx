@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, User, Hash, FileText } from 'lucide-react';
+import { useExitConfirmation } from '@/hooks/useExitConfirmation';
 
 interface FormularioInicialProps {
   onNext: (data: FormData) => void;
@@ -80,6 +81,13 @@ const FormularioInicial: React.FC<FormularioInicialProps> = ({ onNext }) => {
 
   const isFormValid = Object.values(formData).every(value => value.trim()) && 
                      Object.values(errors).every(error => !error);
+
+  // Confirmação de saída se houver dados preenchidos
+  const hasData = Object.values(formData).some(value => value.trim());
+  useExitConfirmation({ 
+    when: hasData,
+    message: 'Você tem certeza que deseja sair? Os dados do formulário serão perdidos.'
+  });
 
   return (
     <div className="min-h-screen bg-background p-4 animate-fade-in">

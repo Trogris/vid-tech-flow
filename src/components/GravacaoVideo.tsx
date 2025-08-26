@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Square, Camera, RotateCcw, ArrowRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useExitConfirmation } from '@/hooks/useExitConfirmation';
 
 interface GravacaoVideoProps {
   onNext: (videoBlob: Blob, recordingTime: number) => void;
@@ -187,6 +188,13 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       onNext(recordedVideo, recordingTime);
     }
   };
+
+  // Confirmação de saída durante gravação ou se há vídeo gravado
+  const hasWork = isRecording || recordedVideo !== null || recordingTime > 0;
+  useExitConfirmation({ 
+    when: hasWork,
+    message: 'Você tem certeza que deseja sair? A gravação será perdida.'
+  });
 
   return (
     <div className="min-h-screen bg-background animate-fade-in p-4">

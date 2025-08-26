@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Image, BarChart3, FileDown, CheckCircle } from 'lucide-react';
+import { useExitConfirmation } from '@/hooks/useExitConfirmation';
 
 interface ProcessamentoVideoProps {
   videoBlobAberto: Blob;
@@ -48,6 +49,12 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({
     { id: 'analysis', label: 'Analisando conteúdo', icon: BarChart3, completed: false },
     { id: 'report', label: 'Gerando relatório', icon: FileDown, completed: false }
   ];
+
+  // Confirmação de saída durante processamento
+  useExitConfirmation({ 
+    when: isProcessing,
+    message: 'Você tem certeza que deseja sair? O processamento dos vídeos será interrompido.'
+  });
 
   const [processSteps, setProcessSteps] = useState(steps);
 
