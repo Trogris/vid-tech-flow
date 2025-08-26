@@ -149,31 +149,49 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 animate-fade-in">
-      <div className={`mx-auto pt-4 transition-all duration-500 ${isExpanded ? 'max-w-4xl' : 'max-w-md'}`}>
-        <div className="card-soft p-6">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-              <Camera className="w-8 h-8 text-primary-foreground" />
+    <div className={`min-h-screen bg-background animate-fade-in transition-all duration-500 ${
+      isExpanded ? 'p-2' : 'p-4'
+    }`}>
+      <div className="mx-auto pt-4 max-w-md">
+        <div className={`card-soft transition-all duration-500 ${
+          isExpanded ? 'p-3' : 'p-6'
+        }`}>
+          <div className={`text-center transition-all duration-500 ${
+            isExpanded ? 'mb-3' : 'mb-6'
+          }`}>
+            <div className={`bg-primary rounded-full flex items-center justify-center mx-auto transition-all duration-500 ${
+              isExpanded ? 'w-12 h-12 mb-2' : 'w-16 h-16 mb-4'
+            }`}>
+              <Camera className={`text-primary-foreground transition-all duration-500 ${
+                isExpanded ? 'w-6 h-6' : 'w-8 h-8'
+              }`} />
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className={`font-bold text-foreground transition-all duration-500 ${
+              isExpanded ? 'text-lg mb-1' : 'text-2xl mb-2'
+            }`}>
               {etapa}
             </h1>
-            <p className="text-muted-foreground">
+            <p className={`text-muted-foreground transition-all duration-500 ${
+              isExpanded ? 'text-sm' : ''
+            }`}>
               {recordedVideo ? 'Vídeo gravado com sucesso' : descricao}
             </p>
           </div>
 
           {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+            <div className={`bg-destructive/10 border border-destructive/20 rounded-lg p-4 transition-all duration-500 ${
+              isExpanded ? 'mb-3' : 'mb-6'
+            }`}>
               <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
           {/* Preview da câmera ou vídeo gravado */}
-          <div className="relative mb-6">
+          <div className={`relative transition-all duration-500 ${
+            isExpanded ? 'mb-3' : 'mb-6'
+          }`}>
             <div className={`bg-muted rounded-lg overflow-hidden transition-all duration-500 ${
-              isExpanded ? 'aspect-video' : 'aspect-video'
+              isExpanded ? 'aspect-[4/3] h-[60vh]' : 'aspect-video'
             }`}>
                {!recordedVideo ? (
                   <video
