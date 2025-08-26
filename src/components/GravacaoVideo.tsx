@@ -184,16 +184,10 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   return (
-    <div className={`min-h-screen bg-background animate-fade-in ${
-      isMobile && isExpanded ? 'transition-all duration-500 p-2' : 'p-4'
-    }`}>
+    <div className="min-h-screen bg-background animate-fade-in p-4">
       <div className="mx-auto pt-4 max-w-md">
-        <div className={`card-soft ${
-          isMobile && isExpanded ? 'transition-all duration-500 p-3' : 'p-6'
-        }`}>
-          <div className={`text-center ${
-            isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
-          }`}>
+        <div className={`card-soft ${isMobile && isExpanded ? 'transition-all duration-500 p-3' : 'p-6'}`}>
+          <div className={`text-center ${isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'}`}>
             <div className={`bg-primary rounded-full flex items-center justify-center mx-auto ${
               isMobile && isExpanded ? 'transition-all duration-500 w-12 h-12 mb-2' : 'w-16 h-16 mb-4'
             }`}>
@@ -222,9 +216,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
           )}
 
           {/* Preview da câmera ou vídeo gravado */}
-          <div className={`relative ${
-            isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
-          }`}>
+          <div className={`relative ${isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'}`}>
             <div className={`bg-muted rounded-lg overflow-hidden ${
               isMobile && isExpanded ? 'transition-all duration-500 aspect-[4/3] h-[60vh]' : 'aspect-video'
             }`}>
