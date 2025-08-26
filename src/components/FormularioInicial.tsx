@@ -18,6 +18,7 @@ interface FormErrors {
 }
 
 const FormularioInicial: React.FC<FormularioInicialProps> = ({ onNext }) => {
+  console.log('FormularioInicial rendered');
   const [formData, setFormData] = useState<FormData>({
     nomeTecnico: '',
     numeroSerie: '',

@@ -92,9 +92,16 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     if (!stream) return;
 
     try {
-      // Expandir tela APENAS no mobile
-      if (isMobile) {
+      console.log('Starting recording, isMobile:', isMobile, 'userAgent:', navigator.userAgent)
+      
+      // Expandir tela APENAS no mobile (dispositivos reais)
+      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      if (isMobile && isRealMobile) {
+        console.log('Expanding for mobile device')
         setIsExpanded(true);
+      } else {
+        console.log('Not expanding - PC or tablet')
+        setIsExpanded(false);
       }
       
       // Configurações específicas para iOS compatibilidade
@@ -157,10 +164,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // Retornar ao tamanho normal APENAS no mobile
-      if (isMobile) {
-        setIsExpanded(false);
-      }
+      // Retornar ao tamanho normal
+      setIsExpanded(false);
       
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
