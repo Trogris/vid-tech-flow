@@ -1,11 +1,11 @@
-import React from 'react';
+import { StrictMode, Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
 // Error boundary global para capturar erros que causam tela branca
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error?: Error}> {
-  constructor(props: {children: React.ReactNode}) {
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error?: Error}> {
+  constructor(props: {children: ReactNode}) {
     super(props);
     this.state = { hasError: false };
   }
