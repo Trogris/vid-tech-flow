@@ -74,10 +74,8 @@ const Index = () => {
   };
 
   const renderCurrentStep = () => {
-    console.log('Current step:', currentStep);
     switch (currentStep) {
       case 'form':
-        console.log('Rendering FormularioInicial');
         return <FormularioInicial onNext={handleFormNext} />;
       
       case 'recording-aberto':
@@ -127,17 +125,7 @@ const Index = () => {
     }
   };
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f0f0f0', padding: '20px' }}>
-      <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', maxWidth: '400px', margin: '0 auto' }}>
-        <h1 style={{ color: '#333', marginBottom: '20px' }}>Debug: Index Component</h1>
-        <p style={{ color: '#666' }}>Current Step: {currentStep}</p>
-        <div style={{ marginTop: '20px' }}>
-          {renderCurrentStep()}
-        </div>
-      </div>
-    </div>
-  );
+  return renderCurrentStep();
 };
 
 export default Index;
