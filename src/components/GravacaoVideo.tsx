@@ -22,8 +22,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   
   console.log('🎥 GravacaoVideo rendered:', { 
     isMobile, 
-    platform: navigator.platform, 
-    userAgent: navigator.userAgent.substring(0, 50) 
+    platform: navigator?.platform || 'unknown', 
+    userAgent: navigator?.userAgent?.substring(0, 50) || 'unknown'
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -33,21 +33,46 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Sempre usar API web para gravação de vídeo (funciona melhor no iOS)
-    initializeCamera();
-    
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+    try {
+      // Sempre usar API web para gravação de vídeo (funciona melhor no iOS)
+      initializeCamera().catch(err => {
+        console.error('❌ Error in initializeCamera effect:', err);
+        setError('Erro ao inicializar câmera');
+      });
+      
+      return () => {
+        try {
+          if (stream) {
+            stream.getTracks().forEach(track => {
+              try {
+                track.stop();
+              } catch (err) {
+                console.error('❌ Error stopping track:', err);
+              }
+            });
+          }
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+        } catch (err) {
+          console.error('❌ Error in cleanup:', err);
+        }
+      };
+    } catch (err) {
+      console.error('❌ Error in useEffect:', err);
+      setError('Erro ao configurar componente');
+    }
   }, []);
 
   const initializeCamera = async () => {
     try {
+      console.log('📸 Initializing camera...');
+      
+      // Verificar se navigator.mediaDevices existe
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('API de mídia não suportada pelo navegador');
+      }
+      
       // Configuração mais flexível para web e mobile
       const constraints = {
         video: {
@@ -58,32 +83,42 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
+      console.log('📸 Requesting camera with constraints:', constraints);
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
+      console.log('✅ Camera stream obtained');
       setStream(mediaStream);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         // Garantir que o vídeo seja reproduzido
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(console.error);
+          videoRef.current?.play().catch(err => {
+            console.error('Error playing video:', err);
+          });
         };
       }
       setError('');
     } catch (err) {
-      console.error('Erro ao acessar a câmera:', err);
+      console.error('❌ Erro ao acessar a câmera:', err);
       // Tentar novamente com configurações mais básicas
       try {
+        console.log('📸 Trying basic camera access...');
         const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log('✅ Basic camera stream obtained');
+        
         setStream(basicStream);
         if (videoRef.current) {
           videoRef.current.srcObject = basicStream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play().catch(console.error);
+            videoRef.current?.play().catch(err => {
+              console.error('Error playing basic video:', err);
+            });
           };
         }
         setError('');
       } catch (basicErr) {
-        console.error('Erro ao acessar câmera com configurações básicas:', basicErr);
+        console.error('❌ Erro ao acessar câmera com configurações básicas:', basicErr);
         setError('Não foi possível acessar a câmera. Verifique as permissões.');
       }
     }
@@ -99,10 +134,10 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     console.log('🎬 START RECORDING CALLED - Version Web Test');
     console.log('🎬 Stream available:', !!stream);
     console.log('🎬 IsMobile:', isMobile);
-    console.log('🎬 Platform:', navigator.platform);
-    console.log('🎬 UserAgent:', navigator.userAgent);
-    console.log('🎬 Window size:', window.innerWidth, 'x', window.innerHeight);
-    console.log('🎬 Browser:', /Chrome|Firefox|Safari|Edge/.exec(navigator.userAgent)?.[0] || 'Unknown');
+    console.log('🎬 Platform:', navigator?.platform || 'unknown');
+    console.log('🎬 UserAgent:', navigator?.userAgent || 'unknown');
+    console.log('🎬 Window size:', window?.innerWidth || 0, 'x', window?.innerHeight || 0);
+    console.log('🎬 Browser:', /Chrome|Firefox|Safari|Edge/.exec(navigator?.userAgent || '')?.[0] || 'Unknown');
     
     if (!stream) {
       console.error('❌ CRITICAL: No stream available');
@@ -114,7 +149,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       console.log('🎬 Starting recording process...');
       
       // Expandir tela APENAS no mobile (dispositivos reais)
-      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator?.userAgent || '');
       console.log('📱 Device detection:', { isMobile, isRealMobile });
       
       if (isMobile && isRealMobile) {
@@ -126,7 +161,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       }
       
       // Configurações específicas para iOS compatibilidade
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator?.userAgent || '');
       console.log('🍎 iOS detected:', isIOS);
       
       const options: MediaRecorderOptions = {};
@@ -275,11 +310,15 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   // Confirmação de saída durante gravação ou se há vídeo gravado
-  const hasWork = isRecording || recordedVideo !== null || recordingTime > 0;
-  useExitConfirmation({ 
-    when: hasWork,
-    message: 'Você tem certeza que deseja sair? A gravação será perdida.'
-  });
+  try {
+    const hasWork = isRecording || recordedVideo !== null || recordingTime > 0;
+    useExitConfirmation({ 
+      when: hasWork,
+      message: 'Você tem certeza que deseja sair? A gravação será perdida.'
+    });
+  } catch (err) {
+    console.error('❌ Error in useExitConfirmation:', err);
+  }
 
   return (
     <div className="min-h-screen bg-background animate-fade-in p-4">
@@ -290,10 +329,10 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
               <Camera className="text-primary-foreground w-8 h-8" />
             </div>
             <h1 className="font-bold text-foreground text-2xl mb-2">
-              {etapa}
+              {etapa || 'Gravação'}
             </h1>
             <p className="text-muted-foreground">
-              {recordedVideo ? 'Vídeo gravado com sucesso' : descricao}
+              {recordedVideo ? 'Vídeo gravado com sucesso' : (descricao || 'Grave seu vídeo')}
             </p>
           </div>
 
