@@ -4,6 +4,8 @@ import { Upload, Image, BarChart3, FileDown, CheckCircle } from 'lucide-react';
 interface ProcessamentoVideoProps {
   videoBlobAberto: Blob;
   videoBlobFechado: Blob;
+  durationAberto?: number;
+  durationFechado?: number;
   onComplete: (results: ProcessingResults) => void;
 }
 
@@ -28,7 +30,13 @@ interface ProcessingStep {
   completed: boolean;
 }
 
-const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlobAberto, videoBlobFechado, onComplete }) => {
+const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ 
+  videoBlobAberto, 
+  videoBlobFechado, 
+  durationAberto, 
+  durationFechado, 
+  onComplete 
+}) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(true);
@@ -82,8 +90,8 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlobAberto
         framesAberto,
         framesFechado,
         analysis: {
-          durationAberto: metadataAberto.duration,
-          durationFechado: metadataFechado.duration,
+          durationAberto: durationAberto || metadataAberto.duration,
+          durationFechado: durationFechado || metadataFechado.duration,
           frameCountAberto: framesAberto.length,
           frameCountFechado: framesFechado.length,
           resolution: `${metadataAberto.width}x${metadataAberto.height}`,
@@ -107,8 +115,8 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({ videoBlobAberto
         framesAberto: [],
         framesFechado: [],
         analysis: {
-          durationAberto: 30,
-          durationFechado: 30,
+          durationAberto: durationAberto || 30,
+          durationFechado: durationFechado || 30,
           frameCountAberto: 0,
           frameCountFechado: 0,
           resolution: '1920x1080',

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Square, Camera, RotateCcw, ArrowRight } from 'lucide-react';
 
 interface GravacaoVideoProps {
-  onNext: (videoBlob: Blob) => void;
+  onNext: (videoBlob: Blob, recordingTime: number) => void;
   onBack: () => void;
   etapa: string;
   descricao: string;
@@ -39,8 +39,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const initializeCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }, // Preferência pela câmera traseira
-        audio: true
+        video: { facingMode: 'environment' } // Preferência pela câmera traseira
       });
       
       setStream(mediaStream);
@@ -144,7 +143,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
   const handleNext = () => {
     if (recordedVideo) {
-      onNext(recordedVideo);
+      onNext(recordedVideo, recordingTime);
     }
   };
 

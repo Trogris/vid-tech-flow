@@ -10,6 +10,8 @@ interface FormData {
   nomeTecnico: string;
   numeroSerie: string;
   contrato: string;
+  durationAberto?: number;
+  durationFechado?: number;
 }
 
 interface ProcessingResults {
@@ -38,13 +40,15 @@ const Index = () => {
     setCurrentStep('recording-aberto');
   };
 
-  const handleRecordingAbertoNext = (blob: Blob) => {
+  const handleRecordingAbertoNext = (blob: Blob, recordingTime: number) => {
     setVideoBlobAberto(blob);
+    setFormData(prev => prev ? { ...prev, durationAberto: recordingTime } : null);
     setCurrentStep('recording-fechado');
   };
 
-  const handleRecordingFechadoNext = (blob: Blob) => {
+  const handleRecordingFechadoNext = (blob: Blob, recordingTime: number) => {
     setVideoBlobFechado(blob);
+    setFormData(prev => prev ? { ...prev, durationFechado: recordingTime } : null);
     setCurrentStep('processing');
   };
 
@@ -95,10 +99,12 @@ const Index = () => {
         );
       
       case 'processing':
-        return videoBlobAberto && videoBlobFechado ? (
+        return videoBlobAberto && videoBlobFechado && formData ? (
           <ProcessamentoVideo 
             videoBlobAberto={videoBlobAberto}
             videoBlobFechado={videoBlobFechado}
+            durationAberto={formData.durationAberto}
+            durationFechado={formData.durationFechado}
             onComplete={handleProcessingComplete}
           />
         ) : null;
