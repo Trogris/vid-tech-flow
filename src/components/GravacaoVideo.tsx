@@ -19,6 +19,12 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const [isExpanded, setIsExpanded] = useState(false);
   
   const isMobile = useIsMobile();
+  
+  console.log('🎥 GravacaoVideo rendered:', { 
+    isMobile, 
+    platform: navigator.platform, 
+    userAgent: navigator.userAgent.substring(0, 50) 
+  });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const recordedVideoRef = useRef<HTMLVideoElement>(null);
