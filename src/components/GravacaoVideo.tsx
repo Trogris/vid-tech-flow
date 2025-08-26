@@ -275,56 +275,47 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   return (
     <div className="min-h-screen bg-background animate-fade-in p-4">
       <div className="mx-auto pt-4 max-w-md">
-        <div className={`card-soft ${isMobile && isExpanded ? 'transition-all duration-500 p-3' : 'p-6'}`}>
-          <div className={`text-center ${isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'}`}>
-            <div className={`bg-primary rounded-full flex items-center justify-center mx-auto ${
-              isMobile && isExpanded ? 'transition-all duration-500 w-12 h-12 mb-2' : 'w-16 h-16 mb-4'
-            }`}>
-              <Camera className={`text-primary-foreground ${
-                isMobile && isExpanded ? 'transition-all duration-500 w-6 h-6' : 'w-8 h-8'
-              }`} />
+        <div className="card-soft p-6">
+          <div className="text-center mb-6">
+            <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <Camera className="text-primary-foreground w-8 h-8" />
             </div>
-            <h1 className={`font-bold text-foreground ${
-              isMobile && isExpanded ? 'transition-all duration-500 text-lg mb-1' : 'text-2xl mb-2'
-            }`}>
+            <h1 className="font-bold text-foreground text-2xl mb-2">
               {etapa}
             </h1>
-            <p className={`text-muted-foreground ${
-              isMobile && isExpanded ? 'transition-all duration-500 text-sm' : ''
-            }`}>
+            <p className="text-muted-foreground">
               {recordedVideo ? 'Vídeo gravado com sucesso' : descricao}
             </p>
           </div>
 
           {error && (
-            <div className={`bg-destructive/10 border border-destructive/20 rounded-lg p-4 ${
-              isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
-            }`}>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
               <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
           {/* Preview da câmera ou vídeo gravado */}
-          <div className={`relative ${isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'}`}>
-            <div className={`bg-muted rounded-lg overflow-hidden ${
-              isMobile && isExpanded ? 'transition-all duration-500 aspect-[4/3] h-[60vh]' : 'aspect-video'
-            }`}>
-               {!recordedVideo ? (
-                 <video
-                   ref={videoRef}
-                   autoPlay
-                   muted
-                   playsInline
-                   className="w-full h-full object-cover"
-                 />
-               ) : (
-               <video
-                 ref={recordedVideoRef}
-                 controls
-                 playsInline
-                 className="w-full h-full object-cover"
-               />
-             )}
+          <div className="relative mb-6">
+            <div className="bg-muted rounded-lg overflow-hidden aspect-video">
+              {!recordedVideo && (
+                <video
+                  key="camera-preview"
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              )}
+              {recordedVideo && (
+                <video
+                  key="recorded-video"
+                  ref={recordedVideoRef}
+                  controls
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
             
             {/* Timer de gravação */}
@@ -336,30 +327,30 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
           </div>
 
           {/* Controles de gravação */}
-          {!recordedVideo ? (
-            <div className="flex justify-center gap-4 mb-6">
+          <div className="flex justify-center gap-4 mb-6">
+            {!recordedVideo && (
               <button
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={!stream || !!error}
                 className={`btn-primary flex items-center gap-2 ${
-                  isRecording ? 'bg-destructive hover:bg-destructive-hover' : ''
+                  isRecording ? 'bg-destructive hover:bg-destructive/90' : ''
                 }`}
               >
                 {isRecording ? (
-                  <>
+                  <React.Fragment>
                     <Square className="w-5 h-5" />
                     Finalizar
-                  </>
+                  </React.Fragment>
                 ) : (
-                  <>
+                  <React.Fragment>
                     <Play className="w-5 h-5" />
                     Iniciar Gravação
-                  </>
+                  </React.Fragment>
                 )}
               </button>
-            </div>
-          ) : (
-            <div className="flex justify-center gap-4 mb-6">
+            )}
+            
+            {recordedVideo && (
               <button
                 onClick={restartRecording}
                 className="btn-secondary flex items-center gap-2"
@@ -367,8 +358,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                 <RotateCcw className="w-5 h-5" />
                 Gravar Novamente
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Botões de navegação */}
           <div className="flex gap-3">
