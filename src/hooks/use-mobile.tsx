@@ -7,16 +7,32 @@ export function useIsMobile() {
 
   React.useEffect(() => {
     const checkDevice = () => {
-      // Combinação de largura da tela + detecção de dispositivo
+      // Detecção mais precisa: apenas largura da tela e detecção real de dispositivo móvel
       const screenWidth = window.innerWidth < MOBILE_BREAKPOINT
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      const isMobileDevice = isAndroid || isIOS
+      const isRealMobileDevice = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
       
-      // Se é dispositivo móvel real OU tela pequena com toque
-      const result = isMobileDevice || (screenWidth && isTouchDevice)
-      console.log('Device detection:', { screenWidth, isTouchDevice, isMobileDevice, result })
+      // Para Windows: apenas considerar mobile se for tela pequena E dispositivo móvel real
+      const isWindows = /Windows/i.test(navigator.platform) || /Win/i.test(navigator.platform)
+      
+      let result = false
+      
+      if (isWindows) {
+        // No Windows: NUNCA considerar mobile (mesmo com tela pequena)
+        result = false
+        console.log('🖥️ Windows detected - forcing desktop mode')
+      } else {
+        // Outros sistemas: usar detecção normal
+        result = isRealMobileDevice || screenWidth
+      }
+      
+      console.log('📱 Device detection:', { 
+        screenWidth, 
+        isRealMobileDevice, 
+        isWindows, 
+        platform: navigator.platform,
+        result 
+      })
+      
       setIsMobile(result)
     }
 

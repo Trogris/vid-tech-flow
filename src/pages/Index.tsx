@@ -29,11 +29,14 @@ interface ProcessingResults {
 }
 
 const Index = () => {
+  console.log('🚀 Index component mounted - Platform:', navigator.platform, 'User Agent:', navigator.userAgent.substring(0, 50));
+  
   const [currentStep, setCurrentStep] = useState<Step>('form');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [videoBlobAberto, setVideoBlobAberto] = useState<Blob | null>(null);
   const [videoBlobFechado, setVideoBlobFechado] = useState<Blob | null>(null);
   const [results, setResults] = useState<ProcessingResults | null>(null);
+  const [hasError, setHasError] = useState<string | null>(null);
 
   const handleFormNext = (data: FormData) => {
     setFormData(data);
@@ -74,54 +77,88 @@ const Index = () => {
   };
 
   const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 'form':
-        return <FormularioInicial onNext={handleFormNext} />;
-      
-      case 'recording-aberto':
-        return (
-          <GravacaoVideo 
-            onNext={handleRecordingAbertoNext} 
-            onBack={handleRecordingAbertoBack}
-            etapa="Equipamento Aberto"
-            descricao="Grave o vídeo com o equipamento aberto"
-          />
-        );
-      
-      case 'recording-fechado':
-        return (
-          <GravacaoVideo 
-            onNext={handleRecordingFechadoNext} 
-            onBack={handleRecordingFechadoBack}
-            etapa="Equipamento Fechado"
-            descricao="Grave o vídeo com o equipamento fechado"
-          />
-        );
-      
-      case 'processing':
-        return videoBlobAberto && videoBlobFechado && formData ? (
-          <ProcessamentoVideo 
-            videoBlobAberto={videoBlobAberto}
-            videoBlobFechado={videoBlobFechado}
-            durationAberto={formData.durationAberto}
-            durationFechado={formData.durationFechado}
-            onComplete={handleProcessingComplete}
-          />
-        ) : null;
-      
-      case 'results':
-        return formData && results ? (
-          <ResultadosRelatorio 
-            formData={formData}
-            results={results}
-            onNewAnalysis={handleNewAnalysis}
-            videoBlobAberto={videoBlobAberto}
-            videoBlobFechado={videoBlobFechado}
-          />
-        ) : null;
-      
-      default:
-        return <FormularioInicial onNext={handleFormNext} />;
+    console.log('🎯 Rendering step:', currentStep, 'Has error:', hasError);
+    
+    try {
+      switch (currentStep) {
+        case 'form':
+          console.log('📝 Rendering FormularioInicial');
+          return <FormularioInicial onNext={handleFormNext} />;
+        
+        case 'recording-aberto':
+          console.log('🎥 Rendering GravacaoVideo - Aberto');
+          return (
+            <GravacaoVideo 
+              onNext={handleRecordingAbertoNext} 
+              onBack={handleRecordingAbertoBack}
+              etapa="Equipamento Aberto"
+              descricao="Grave o vídeo com o equipamento aberto"
+            />
+          );
+        
+        case 'recording-fechado':
+          console.log('🎥 Rendering GravacaoVideo - Fechado');
+          return (
+            <GravacaoVideo 
+              onNext={handleRecordingFechadoNext} 
+              onBack={handleRecordingFechadoBack}
+              etapa="Equipamento Fechado"
+              descricao="Grave o vídeo com o equipamento fechado"
+            />
+          );
+        
+        case 'processing':
+          console.log('⚙️ Rendering ProcessamentoVideo', { videoBlobAberto: !!videoBlobAberto, videoBlobFechado: !!videoBlobFechado, formData: !!formData });
+          return videoBlobAberto && videoBlobFechado && formData ? (
+            <ProcessamentoVideo 
+              videoBlobAberto={videoBlobAberto}
+              videoBlobFechado={videoBlobFechado}
+              durationAberto={formData.durationAberto}
+              durationFechado={formData.durationFechado}
+              onComplete={handleProcessingComplete}
+            />
+          ) : null;
+        
+        case 'results':
+          console.log('📊 Rendering ResultadosRelatorio', { formData: !!formData, results: !!results });
+          return formData && results ? (
+            <ResultadosRelatorio 
+              formData={formData}
+              results={results}
+              onNewAnalysis={handleNewAnalysis}
+              videoBlobAberto={videoBlobAberto}
+              videoBlobFechado={videoBlobFechado}
+            />
+          ) : null;
+        
+        default:
+          console.log('🔄 Default case - Rendering FormularioInicial');
+          return <FormularioInicial onNext={handleFormNext} />;
+      }
+    } catch (error) {
+      console.error('❌ Error rendering step:', error);
+      setHasError(error instanceof Error ? error.message : 'Erro desconhecido');
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+              <h1 className="text-xl font-bold text-foreground mb-2">Erro na Aplicação</h1>
+              <p className="text-muted-foreground mb-4">
+                {hasError || 'Ocorreu um erro inesperado'}
+              </p>
+              <button 
+                onClick={() => {
+                  setHasError(null);
+                  setCurrentStep('form');
+                }}
+                className="btn-primary"
+              >
+                Tentar Novamente
+              </button>
+            </div>
+          </div>
+        </div>
+      );
     }
   };
 
