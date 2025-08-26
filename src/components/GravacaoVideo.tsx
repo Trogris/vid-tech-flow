@@ -92,7 +92,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     if (!stream) return;
 
     try {
-      // Expandir tela apenas no mobile
+      // Expandir tela APENAS no mobile
       if (isMobile) {
         setIsExpanded(true);
       }
@@ -157,7 +157,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // Retornar ao tamanho normal apenas no mobile
+      // Retornar ao tamanho normal APENAS no mobile
       if (isMobile) {
         setIsExpanded(false);
       }
@@ -184,49 +184,49 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   return (
-    <div className={`min-h-screen bg-background animate-fade-in transition-all duration-500 ${
-      isMobile && isExpanded ? 'p-2' : 'p-4'
+    <div className={`min-h-screen bg-background animate-fade-in ${
+      isMobile && isExpanded ? 'transition-all duration-500 p-2' : 'p-4'
     }`}>
       <div className="mx-auto pt-4 max-w-md">
-        <div className={`card-soft transition-all duration-500 ${
-          isMobile && isExpanded ? 'p-3' : 'p-6'
+        <div className={`card-soft ${
+          isMobile && isExpanded ? 'transition-all duration-500 p-3' : 'p-6'
         }`}>
-          <div className={`text-center transition-all duration-500 ${
-            isMobile && isExpanded ? 'mb-3' : 'mb-6'
+          <div className={`text-center ${
+            isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
           }`}>
-            <div className={`bg-primary rounded-full flex items-center justify-center mx-auto transition-all duration-500 ${
-              isMobile && isExpanded ? 'w-12 h-12 mb-2' : 'w-16 h-16 mb-4'
+            <div className={`bg-primary rounded-full flex items-center justify-center mx-auto ${
+              isMobile && isExpanded ? 'transition-all duration-500 w-12 h-12 mb-2' : 'w-16 h-16 mb-4'
             }`}>
-              <Camera className={`text-primary-foreground transition-all duration-500 ${
-                isMobile && isExpanded ? 'w-6 h-6' : 'w-8 h-8'
+              <Camera className={`text-primary-foreground ${
+                isMobile && isExpanded ? 'transition-all duration-500 w-6 h-6' : 'w-8 h-8'
               }`} />
             </div>
-            <h1 className={`font-bold text-foreground transition-all duration-500 ${
-              isMobile && isExpanded ? 'text-lg mb-1' : 'text-2xl mb-2'
+            <h1 className={`font-bold text-foreground ${
+              isMobile && isExpanded ? 'transition-all duration-500 text-lg mb-1' : 'text-2xl mb-2'
             }`}>
               {etapa}
             </h1>
-            <p className={`text-muted-foreground transition-all duration-500 ${
-              isMobile && isExpanded ? 'text-sm' : ''
+            <p className={`text-muted-foreground ${
+              isMobile && isExpanded ? 'transition-all duration-500 text-sm' : ''
             }`}>
               {recordedVideo ? 'Vídeo gravado com sucesso' : descricao}
             </p>
           </div>
 
           {error && (
-            <div className={`bg-destructive/10 border border-destructive/20 rounded-lg p-4 transition-all duration-500 ${
-              isMobile && isExpanded ? 'mb-3' : 'mb-6'
+            <div className={`bg-destructive/10 border border-destructive/20 rounded-lg p-4 ${
+              isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
             }`}>
               <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
           {/* Preview da câmera ou vídeo gravado */}
-          <div className={`relative transition-all duration-500 ${
-            isMobile && isExpanded ? 'mb-3' : 'mb-6'
+          <div className={`relative ${
+            isMobile && isExpanded ? 'transition-all duration-500 mb-3' : 'mb-6'
           }`}>
-            <div className={`bg-muted rounded-lg overflow-hidden transition-all duration-500 ${
-              isMobile && isExpanded ? 'aspect-[4/3] h-[60vh]' : 'aspect-video'
+            <div className={`bg-muted rounded-lg overflow-hidden ${
+              isMobile && isExpanded ? 'transition-all duration-500 aspect-[4/3] h-[60vh]' : 'aspect-video'
             }`}>
                {!recordedVideo ? (
                  <video
