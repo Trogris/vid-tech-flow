@@ -21,9 +21,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const isMobile = useIsMobile();
   
   console.log('🎥 GravacaoVideo rendered:', { 
-    isMobile, 
-    platform: navigator?.platform || 'unknown', 
-    userAgent: navigator?.userAgent?.substring(0, 50) || 'unknown'
+    isMobile
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -131,13 +129,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   const startRecording = async () => {
-    console.log('🎬 START RECORDING CALLED - Version Web Test');
+    console.log('🎬 START RECORDING CALLED');
     console.log('🎬 Stream available:', !!stream);
-    console.log('🎬 IsMobile:', isMobile);
-    console.log('🎬 Platform:', navigator?.platform || 'unknown');
-    console.log('🎬 UserAgent:', navigator?.userAgent || 'unknown');
-    console.log('🎬 Window size:', window?.innerWidth || 0, 'x', window?.innerHeight || 0);
-    console.log('🎬 Browser:', /Chrome|Firefox|Safari|Edge/.exec(navigator?.userAgent || '')?.[0] || 'Unknown');
     
     if (!stream) {
       console.error('❌ CRITICAL: No stream available');
@@ -149,7 +142,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       console.log('🎬 Starting recording process...');
       
       // Expandir tela APENAS no mobile (dispositivos reais)
-      const isRealMobile = /Android|iPhone|iPad|iPod/i.test(navigator?.userAgent || '');
+      const isRealMobile = isMobile && typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator?.userAgent || '');
       console.log('📱 Device detection:', { isMobile, isRealMobile });
       
       if (isMobile && isRealMobile) {
@@ -161,7 +154,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       }
       
       // Configurações específicas para iOS compatibilidade
-      const isIOS = /iPad|iPhone|iPod/.test(navigator?.userAgent || '');
+      const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator?.userAgent || '');
       console.log('🍎 iOS detected:', isIOS);
       
       const options: MediaRecorderOptions = {};
