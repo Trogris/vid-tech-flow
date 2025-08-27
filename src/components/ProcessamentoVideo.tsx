@@ -50,11 +50,11 @@ const ProcessamentoVideo: React.FC<ProcessamentoVideoProps> = ({
     { id: 'report', label: 'Gerando relatório', icon: FileDown, completed: false }
   ];
 
-  // Confirmação de saída durante processamento
-  useExitConfirmation({ 
-    when: isProcessing,
-    message: 'Você tem certeza que deseja sair? O processamento dos vídeos será interrompido.'
-  });
+  // Temporarily disabled to isolate recording issue  
+  // useExitConfirmation({ 
+  //   when: isProcessing,
+  //   message: 'Você tem certeza que deseja sair? O processamento dos vídeos será interrompido.'
+  // });
 
   const [processSteps, setProcessSteps] = useState(steps);
 

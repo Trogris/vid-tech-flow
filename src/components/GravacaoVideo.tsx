@@ -22,8 +22,11 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const initializeCamera = useCallback(async () => {
+    console.log('📷 Inicializando câmera...');
+    
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
+        console.error('❌ getUserMedia não suportado');
         setError('Câmera não suportada neste navegador');
         return;
       }
@@ -36,11 +39,13 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
+      console.log('📷 Stream obtido com sucesso');
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        console.log('✅ Vídeo conectado ao stream');
       }
       setError('');
     } catch (err) {
@@ -77,12 +82,16 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   const startRecording = async () => {
+    console.log('🎬 Iniciando gravação...');
+    
     if (!stream) {
+      console.error('❌ Stream não disponível');
       setError('Câmera não disponível');
       return;
     }
 
     try {
+      console.log('🔧 Configurando MediaRecorder...');
       const options: MediaRecorderOptions = {};
       
       if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
@@ -94,16 +103,20 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       }
 
       const recorder = new MediaRecorder(stream, options);
+      console.log('✅ MediaRecorder criado com sucesso');
+      
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
+        console.log('📊 Dados disponíveis:', event.data.size);
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       recorder.onstop = () => {
+        console.log('⏹️ Gravação finalizada');
         const videoBlob = new Blob(chunksRef.current, { 
           type: recorder.mimeType || 'video/webm' 
         });
@@ -114,6 +127,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
+      console.log('🚀 Iniciando gravação...');
       recorder.start();
       setIsRecording(true);
       setRecordingTime(0);
@@ -123,8 +137,11 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         setRecordingTime(prev => prev + 1);
       }, 1000);
       
+      console.log('✅ Gravação iniciada com sucesso');
+      
     } catch (err) {
-      setError('Erro ao iniciar gravação');
+      console.error('❌ Erro ao iniciar gravação:', err);
+      setError(`Erro ao iniciar gravação: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       setIsRecording(false);
     }
   };
