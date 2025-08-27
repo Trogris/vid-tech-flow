@@ -29,7 +29,7 @@ interface ProcessingResults {
 }
 
 const Index = () => {
-  console.log('🚀 Index component mounted - Platform:', navigator.platform, 'User Agent:', navigator.userAgent.substring(0, 50));
+  console.log('🚀 Index component mounted');
   
   const [currentStep, setCurrentStep] = useState<Step>('form');
   const [formData, setFormData] = useState<FormData | null>(null);

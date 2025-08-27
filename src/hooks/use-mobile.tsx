@@ -11,27 +11,16 @@ export function useIsMobile() {
       const screenWidth = window.innerWidth < MOBILE_BREAKPOINT
       const isRealMobileDevice = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
       
-      // Para Windows: apenas considerar mobile se for tela pequena E dispositivo móvel real
-      const isWindows = /Windows/i.test(navigator.platform) || /Win/i.test(navigator.platform)
-      
+      // Detecção segura baseada apenas na tela e user agent
       let result = false
       
-      if (isWindows) {
-        // No Windows: NUNCA considerar mobile (mesmo com tela pequena)
-        result = false
-        console.log('🖥️ Windows detected - forcing desktop mode')
-      } else {
-        // Outros sistemas: usar detecção normal
-        result = isRealMobileDevice || screenWidth
+      try {
+        // Usar apenas user agent para detecção de mobile real
+        result = isRealMobileDevice && screenWidth
+      } catch (err) {
+        // Fallback para apenas tamanho da tela
+        result = screenWidth
       }
-      
-      console.log('📱 Device detection:', { 
-        screenWidth, 
-        isRealMobileDevice, 
-        isWindows, 
-        platform: navigator.platform,
-        result 
-      })
       
       setIsMobile(result)
     }

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Square, Camera, RotateCcw, ArrowRight } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GravacaoVideoProps {
   onNext: (videoBlob: Blob, recordingTime: number) => void;
@@ -15,8 +14,6 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const [recordingTime, setRecordingTime] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
-  
-  const isMobile = useIsMobile();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const recordedVideoRef = useRef<HTMLVideoElement>(null);
