@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import FormularioInicial from '@/components/FormularioInicial';
 import GravacaoVideo from '@/components/GravacaoVideo';
 import ProcessamentoVideo from '@/components/ProcessamentoVideo';
@@ -29,8 +29,6 @@ interface ProcessingResults {
 }
 
 const Index = () => {
-  console.log('🚀 Index component mounted');
-  
   const [currentStep, setCurrentStep] = useState<Step>('form');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [videoBlobAberto, setVideoBlobAberto] = useState<Blob | null>(null);
@@ -38,55 +36,79 @@ const Index = () => {
   const [results, setResults] = useState<ProcessingResults | null>(null);
   const [hasError, setHasError] = useState<string | null>(null);
 
-  const handleFormNext = (data: FormData) => {
+  const handleFormNext = useCallback((data: FormData) => {
     setFormData(data);
     setCurrentStep('recording-aberto');
-  };
+  }, []);
 
-  const handleRecordingAbertoNext = (blob: Blob, recordingTime: number) => {
+  const handleRecordingAbertoNext = useCallback((blob: Blob, recordingTime: number) => {
     setVideoBlobAberto(blob);
     setFormData(prev => prev ? { ...prev, durationAberto: recordingTime } : null);
     setCurrentStep('recording-fechado');
-  };
+  }, []);
 
-  const handleRecordingFechadoNext = (blob: Blob, recordingTime: number) => {
+  const handleRecordingFechadoNext = useCallback((blob: Blob, recordingTime: number) => {
     setVideoBlobFechado(blob);
     setFormData(prev => prev ? { ...prev, durationFechado: recordingTime } : null);
     setCurrentStep('processing');
-  };
+  }, []);
 
-  const handleRecordingAbertoBack = () => {
+  const handleRecordingAbertoBack = useCallback(() => {
     setCurrentStep('form');
-  };
+  }, []);
 
-  const handleRecordingFechadoBack = () => {
+  const handleRecordingFechadoBack = useCallback(() => {
     setCurrentStep('recording-aberto');
-  };
+  }, []);
 
-  const handleProcessingComplete = (processingResults: ProcessingResults) => {
+  const handleProcessingComplete = useCallback((processingResults: ProcessingResults) => {
     setResults(processingResults);
     setCurrentStep('results');
-  };
+  }, []);
 
-  const handleNewAnalysis = () => {
+  const handleNewAnalysis = useCallback(() => {
     setCurrentStep('form');
     setFormData(null);
     setVideoBlobAberto(null);
     setVideoBlobFechado(null);
     setResults(null);
-  };
+    setHasError(null);
+  }, []);
 
-  const renderCurrentStep = () => {
-    console.log('🎯 Rendering step:', currentStep, 'Has error:', hasError);
-    
+  const renderCurrentStep = useCallback(() => {
     try {
+      if (hasError) {
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="max-w-md w-full">
+              <div className="card-soft p-6 text-center">
+                <div className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-8 h-8 text-destructive-foreground">⚠</div>
+                </div>
+                <h1 className="text-xl font-bold text-foreground mb-2">Erro na aplicação</h1>
+                <p className="text-muted-foreground mb-6">
+                  {hasError}
+                </p>
+                <button
+                  onClick={() => {
+                    setHasError(null);
+                    setCurrentStep('form');
+                  }}
+                  className="btn-primary w-full"
+                >
+                  Tentar Novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       switch (currentStep) {
         case 'form':
-          console.log('📝 Rendering FormularioInicial');
           return <FormularioInicial onNext={handleFormNext} />;
         
         case 'recording-aberto':
-          console.log('🎥 Rendering GravacaoVideo - Aberto');
           return (
             <GravacaoVideo 
               onNext={handleRecordingAbertoNext} 
@@ -97,7 +119,6 @@ const Index = () => {
           );
         
         case 'recording-fechado':
-          console.log('🎥 Rendering GravacaoVideo - Fechado');
           return (
             <GravacaoVideo 
               onNext={handleRecordingFechadoNext} 
@@ -108,7 +129,6 @@ const Index = () => {
           );
         
         case 'processing':
-          console.log('⚙️ Rendering ProcessamentoVideo', { videoBlobAberto: !!videoBlobAberto, videoBlobFechado: !!videoBlobFechado, formData: !!formData });
           return videoBlobAberto && videoBlobFechado && formData ? (
             <ProcessamentoVideo 
               videoBlobAberto={videoBlobAberto}
@@ -120,7 +140,6 @@ const Index = () => {
           ) : null;
         
         case 'results':
-          console.log('📊 Rendering ResultadosRelatorio', { formData: !!formData, results: !!results });
           return formData && results ? (
             <ResultadosRelatorio 
               formData={formData}
@@ -132,19 +151,10 @@ const Index = () => {
           ) : null;
         
         default:
-          console.log('🔄 Default case - Rendering FormularioInicial');
           return <FormularioInicial onNext={handleFormNext} />;
       }
     } catch (error) {
-      console.error('❌ Error rendering step:', error);
-      console.error('❌ Error details:', { 
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : 'No stack trace',
-        currentStep,
-        formData: !!formData,
-        videoBlobAberto: !!videoBlobAberto,
-        videoBlobFechado: !!videoBlobFechado
-      });
+      console.error('Erro renderizando step:', error);
       setHasError(error instanceof Error ? error.message : 'Erro desconhecido');
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -152,7 +162,7 @@ const Index = () => {
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
               <h1 className="text-xl font-bold text-foreground mb-2">Erro na Aplicação</h1>
               <p className="text-muted-foreground mb-4">
-                {hasError || 'Ocorreu um erro inesperado'}
+                {error instanceof Error ? error.message : 'Erro desconhecido'}
               </p>
               <button 
                 onClick={() => {
@@ -168,7 +178,7 @@ const Index = () => {
         </div>
       );
     }
-  };
+  }, [currentStep, hasError, formData, results, videoBlobAberto, videoBlobFechado, handleFormNext, handleRecordingAbertoNext, handleRecordingAbertoBack, handleRecordingFechadoNext, handleRecordingFechadoBack, handleProcessingComplete, handleNewAnalysis]);
 
   return renderCurrentStep();
 };

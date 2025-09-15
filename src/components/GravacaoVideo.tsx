@@ -22,11 +22,8 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const initializeCamera = useCallback(async () => {
-    console.log('📷 Inicializando câmera...');
-    
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
-        console.error('❌ getUserMedia não suportado');
         setError('Câmera não suportada neste navegador');
         return;
       }
@@ -39,29 +36,21 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
-      console.log('📷 Solicitando acesso à câmera...');
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('📷 Stream obtido com sucesso');
-      
       setStream(mediaStream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        console.log('✅ Vídeo conectado ao stream');
         
-        // Força o play do vídeo para garantir que apareça
         try {
           await videoRef.current.play();
-          console.log('✅ Vídeo iniciado');
         } catch (playError) {
-          console.log('⚠️ Auto-play bloqueado, será iniciado na interação do usuário');
+          // Auto-play bloqueado, será iniciado na interação do usuário
         }
       }
       setError('');
     } catch (err) {
-      console.error('❌ Erro ao acessar câmera:', err);
       try {
-        console.log('🔄 Tentando configuração básica...');
         const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
         setStream(basicStream);
         if (videoRef.current) {
@@ -70,7 +59,6 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
         setError('');
       } catch (basicErr) {
-        console.error('❌ Falha total ao acessar câmera:', basicErr);
         setError('Não foi possível acessar a câmera');
       }
     }
@@ -95,17 +83,13 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const startRecording = async () => {
-    console.log('🎬 Iniciando gravação...');
-    
+  const startRecording = useCallback(async () => {
     if (!stream) {
-      console.error('❌ Stream não disponível');
       setError('Câmera não disponível');
       return;
     }
 
     try {
-      console.log('🔧 Configurando MediaRecorder...');
       const options: MediaRecorderOptions = {};
       
       if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
@@ -117,20 +101,16 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       }
 
       const recorder = new MediaRecorder(stream, options);
-      console.log('✅ MediaRecorder criado com sucesso');
-      
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
-        console.log('📊 Dados disponíveis:', event.data.size);
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       recorder.onstop = () => {
-        console.log('⏹️ Gravação finalizada');
         const videoBlob = new Blob(chunksRef.current, { 
           type: recorder.mimeType || 'video/webm' 
         });
@@ -141,7 +121,6 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
-      console.log('🚀 Iniciando gravação...');
       recorder.start();
       setIsRecording(true);
       setRecordingTime(0);
@@ -151,16 +130,13 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         setRecordingTime(prev => prev + 1);
       }, 1000);
       
-      console.log('✅ Gravação iniciada com sucesso');
-      
     } catch (err) {
-      console.error('❌ Erro ao iniciar gravação:', err);
       setError(`Erro ao iniciar gravação: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       setIsRecording(false);
     }
-  };
+  }, [stream]);
 
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -170,21 +146,21 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         intervalRef.current = null;
       }
     }
-  };
+  }, [isRecording]);
 
-  const restartRecording = () => {
+  const restartRecording = useCallback(() => {
     setRecordedVideo(null);
     setRecordingTime(0);
     if (recordedVideoRef.current) {
       recordedVideoRef.current.src = '';
     }
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (recordedVideo) {
       onNext(recordedVideo, recordingTime);
     }
-  };
+  }, [recordedVideo, recordingTime, onNext]);
 
   return (
     <div className="min-h-screen bg-background animate-fade-in p-4">
@@ -220,7 +196,6 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                   className="w-full h-full object-cover"
                   style={{ display: 'block' }}
                   onLoadedMetadata={() => {
-                    console.log('📺 Vídeo carregado e pronto');
                     if (videoRef.current) {
                       videoRef.current.play().catch(console.error);
                     }
