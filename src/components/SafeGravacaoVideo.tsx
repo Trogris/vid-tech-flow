@@ -147,26 +147,26 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 animate-fade-in">
       <div className="max-w-md mx-auto pt-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="card-soft p-6">
           
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Camera className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+              <Camera className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">{etapa}</h1>
-            <p className="text-gray-600">{descricao}</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">{etapa}</h1>
+            <p className="text-muted-foreground">{descricao}</p>
           </div>
 
           {/* Error display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+              <p className="text-destructive text-sm">{error}</p>
               <button 
                 onClick={initCamera}
-                className="mt-2 text-red-600 underline text-sm"
+                className="mt-2 text-destructive underline text-sm hover:no-underline"
               >
                 Tentar novamente
               </button>
@@ -175,14 +175,14 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
 
           {/* Video container */}
           <div className="relative mb-6">
-            <div className="bg-gray-100 rounded-lg overflow-hidden aspect-video">
+            <div className="bg-muted rounded-lg overflow-hidden aspect-video">
               
               {/* Loading state */}
               {status === 'loading' && (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                    <p className="text-gray-500 text-sm">Carregando câmera...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p className="text-muted-foreground text-sm">Carregando câmera...</p>
                   </div>
                 </div>
               )}
@@ -209,7 +209,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
 
               {/* Recording indicator */}
               {status === 'recording' && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-medium animate-pulse">
                   REC {formatTime(recordingTime)}
                 </div>
               )}
@@ -221,7 +221,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
             {status === 'ready' && (
               <button
                 onClick={startRecording}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+                className="btn-primary flex items-center gap-2"
               >
                 <Play className="w-5 h-5" />
                 Iniciar Gravação
@@ -231,7 +231,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
             {status === 'recording' && (
               <button
                 onClick={stopRecording}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <Square className="w-5 h-5" />
                 Parar Gravação
@@ -241,7 +241,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
             {status === 'recorded' && (
               <button
                 onClick={resetRecording}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center gap-2"
+                className="btn-secondary flex items-center gap-2"
               >
                 <RotateCcw className="w-5 h-5" />
                 Gravar Novamente
@@ -253,7 +253,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
           <div className="flex gap-3">
             <button
               onClick={onBack}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg"
+              className="btn-secondary flex-1"
             >
               Voltar
             </button>
@@ -261,10 +261,8 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
             <button
               onClick={handleNext}
               disabled={status !== 'recorded'}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg ${
-                status === 'recorded'
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              className={`btn-primary flex-1 flex items-center justify-center gap-2 ${
+                status !== 'recorded' ? 'opacity-60 cursor-not-allowed' : ''
               }`}
             >
               Avançar
@@ -273,7 +271,7 @@ const SafeGravacaoVideo: React.FC<SafeGravacaoVideoProps> = ({ onNext, onBack, e
           </div>
 
           {/* Debug info */}
-          <div className="mt-4 text-xs text-gray-500 text-center">
+          <div className="mt-4 text-xs text-muted-foreground text-center">
             Status: {status} | Platform: {navigator.platform}
           </div>
         </div>

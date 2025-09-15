@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import FormularioInicial from '@/components/FormularioInicial';
-import SafeGravacaoVideo from '@/components/SafeGravacaoVideo';
+import GravacaoVideo from '@/components/GravacaoVideo';
 import ProcessamentoVideo from '@/components/ProcessamentoVideo';
 import ResultadosRelatorio from '@/components/ResultadosRelatorio';
 import DebugPanel from '@/components/DebugPanel';
@@ -113,7 +113,7 @@ const Index = () => {
         
         case 'recording-aberto':
           return (
-            <SafeGravacaoVideo 
+            <GravacaoVideo 
               onNext={handleRecordingAbertoNext} 
               onBack={handleRecordingAbertoBack}
               etapa="Equipamento Aberto"
@@ -123,7 +123,7 @@ const Index = () => {
         
         case 'recording-fechado':
           return (
-            <SafeGravacaoVideo 
+            <GravacaoVideo 
               onNext={handleRecordingFechadoNext} 
               onBack={handleRecordingFechadoBack}
               etapa="Equipamento Fechado"
