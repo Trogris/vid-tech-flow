@@ -164,7 +164,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
   return (
     <div className="min-h-screen bg-background animate-fade-in p-4">
-      <div className="max-w-md mx-auto pt-8">
+      <div className="max-w-4xl mx-auto pt-8">
         <div className="card-soft p-6">
           <div className="text-center mb-6">
             <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
