@@ -3,8 +3,6 @@ import FormularioInicial from '@/components/FormularioInicial';
 import GravacaoVideo from '@/components/GravacaoVideo';
 import ProcessamentoVideo from '@/components/ProcessamentoVideo';
 import ResultadosRelatorio from '@/components/ResultadosRelatorio';
-import DebugPanel from '@/components/DebugPanel';
-import DiagnosticTest from '@/components/DiagnosticTest';
 
 type Step = 'form' | 'recording-aberto' | 'recording-fechado' | 'processing' | 'results';
 
@@ -37,7 +35,6 @@ const Index = () => {
   const [videoBlobFechado, setVideoBlobFechado] = useState<Blob | null>(null);
   const [results, setResults] = useState<ProcessingResults | null>(null);
   const [hasError, setHasError] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(true); // Debug ativo por padrão
 
   const handleFormNext = useCallback((data: FormData) => {
     setFormData(data);
@@ -188,15 +185,6 @@ const Index = () => {
   return (
     <>
       {renderCurrentStep()}
-      <DebugPanel show={showDebug} />
-      
-      {/* Toggle debug button */}
-      <button
-        onClick={() => setShowDebug(!showDebug)}
-        className="fixed top-4 right-4 bg-red-500 text-white px-3 py-1 rounded text-sm z-50"
-      >
-        {showDebug ? 'Hide' : 'Show'} Debug
-      </button>
     </>
   );
 };
