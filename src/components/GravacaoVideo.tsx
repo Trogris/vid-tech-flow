@@ -39,24 +39,27 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        
-        try {
-          await videoRef.current.play();
-        } catch (playError) {
-          // Auto-play bloqueado, será iniciado na interação do usuário
+      // Aguardar próximo tick para garantir que o componente está montado
+      setTimeout(() => {
+        if (videoRef.current && mediaStream) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(() => {
+            // Auto-play bloqueado, será iniciado na interação do usuário
+          });
         }
-      }
+      }, 100);
+      
       setError('');
     } catch (err) {
       try {
         const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
         setStream(basicStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = basicStream;
-          await videoRef.current.play().catch(() => {});
-        }
+        setTimeout(() => {
+          if (videoRef.current && basicStream) {
+            videoRef.current.srcObject = basicStream;
+            videoRef.current.play().catch(() => {});
+          }
+        }, 100);
         setError('');
       } catch (basicErr) {
         setError('Não foi possível acessar a câmera');
@@ -65,9 +68,18 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   }, []);
 
   useEffect(() => {
-    initializeCamera();
+    let isMounted = true;
+    
+    const init = async () => {
+      if (isMounted) {
+        await initializeCamera();
+      }
+    };
+    
+    init();
     
     return () => {
+      isMounted = false;
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -75,7 +87,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         clearInterval(intervalRef.current);
       }
     };
-  }, [initializeCamera]);
+  }, []);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -186,37 +198,24 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
           <div className="relative mb-6">
             <div className="bg-muted rounded-lg overflow-hidden aspect-video">
-              {/* Vídeo em tempo real - sempre visível durante preview e gravação */}
-              {!recordedVideo && (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                  style={{ display: 'block' }}
-                  onLoadedMetadata={() => {
-                    if (videoRef.current) {
-                      videoRef.current.play().catch(console.error);
-                    }
-                  }}
-                />
-              )}
+              <video
+                ref={recordedVideo ? recordedVideoRef : videoRef}
+                autoPlay={!recordedVideo}
+                muted={!recordedVideo}
+                controls={!!recordedVideo}
+                playsInline
+                className="w-full h-full object-cover"
+                style={{ display: 'block' }}
+                onLoadedMetadata={() => {
+                  if (videoRef.current && !recordedVideo) {
+                    videoRef.current.play().catch(console.error);
+                  }
+                }}
+              />
               
-              {/* Vídeo gravado para playback */}
-              {recordedVideo && (
-                <video
-                  ref={recordedVideoRef}
-                  controls
-                  playsInline
-                  className="w-full h-full object-cover"
-                  style={{ display: 'block' }}
-                />
-              )}
-              
-              {/* Placeholder quando não há stream */}
+              {/* Placeholder quando não há stream nem vídeo gravado */}
               {!stream && !recordedVideo && (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
+                <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
                   <div className="text-center">
                     <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                     <p className="text-muted-foreground text-sm">Carregando câmera...</p>
