@@ -109,7 +109,7 @@ const Index = () => {
 
       switch (currentStep) {
         case 'form':
-          return <DiagnosticTest />; // Temporariamente usando diagnóstico
+          return <FormularioInicial onNext={handleFormNext} />;
         
         case 'recording-aberto':
           return (
