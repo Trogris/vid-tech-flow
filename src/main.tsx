@@ -1,4 +1,4 @@
-import { StrictMode, Component, ReactNode } from 'react';
+import { Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
@@ -40,10 +40,13 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
             backgroundColor: '#fafafa'
           }}>
             <h1 style={{ color: '#ef4444', marginBottom: '1rem' }}>
-              Erro na Aplicação
+              🚨 ERRO CRÍTICO
             </h1>
             <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-              Ocorreu um erro inesperado. Plataforma: {navigator.platform}
+              Erro: {this.state.error?.message || 'Desconhecido'}
+            </p>
+            <p style={{ color: '#888', fontSize: '12px', marginBottom: '1.5rem' }}>
+              Platform: {navigator.platform} | UA: {navigator.userAgent.substring(0, 50)}...
             </p>
             <button 
               onClick={() => window.location.reload()}
@@ -56,7 +59,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
                 cursor: 'pointer'
               }}
             >
-              Recarregar Página
+              🔄 Recarregar Página
             </button>
           </div>
         </div>
@@ -67,8 +70,13 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
   }
 }
 
-console.log('🌟 App starting - Platform:', navigator.platform, 'UA:', navigator.userAgent.substring(0, 80));
+console.log('🔥 DEBUGGING MODE - App starting');
+console.log('Platform:', navigator.platform);
+console.log('UserAgent:', navigator.userAgent);
+console.log('MediaDevices support:', !!(navigator.mediaDevices?.getUserMedia));
+console.log('MediaRecorder support:', typeof MediaRecorder !== 'undefined');
 
+// Removendo StrictMode temporariamente para debug
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
