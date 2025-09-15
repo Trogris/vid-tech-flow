@@ -137,6 +137,14 @@ const Index = () => {
       }
     } catch (error) {
       console.error('❌ Error rendering step:', error);
+      console.error('❌ Error details:', { 
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        currentStep,
+        formData: !!formData,
+        videoBlobAberto: !!videoBlobAberto,
+        videoBlobFechado: !!videoBlobFechado
+      });
       setHasError(error instanceof Error ? error.message : 'Erro desconhecido');
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
