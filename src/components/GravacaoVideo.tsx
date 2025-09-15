@@ -39,24 +39,38 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         }
       };
 
-      console.log('📷 Stream obtido com sucesso');
+      console.log('📷 Solicitando acesso à câmera...');
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('📷 Stream obtido com sucesso');
+      
       setStream(mediaStream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         console.log('✅ Vídeo conectado ao stream');
+        
+        // Força o play do vídeo para garantir que apareça
+        try {
+          await videoRef.current.play();
+          console.log('✅ Vídeo iniciado');
+        } catch (playError) {
+          console.log('⚠️ Auto-play bloqueado, será iniciado na interação do usuário');
+        }
       }
       setError('');
     } catch (err) {
+      console.error('❌ Erro ao acessar câmera:', err);
       try {
+        console.log('🔄 Tentando configuração básica...');
         const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
         setStream(basicStream);
         if (videoRef.current) {
           videoRef.current.srcObject = basicStream;
+          await videoRef.current.play().catch(() => {});
         }
         setError('');
       } catch (basicErr) {
+        console.error('❌ Falha total ao acessar câmera:', basicErr);
         setError('Não foi possível acessar a câmera');
       }
     }
@@ -196,6 +210,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
           <div className="relative mb-6">
             <div className="bg-muted rounded-lg overflow-hidden aspect-video">
+              {/* Vídeo em tempo real - sempre visível durante preview e gravação */}
               {!recordedVideo && (
                 <video
                   ref={videoRef}
@@ -203,15 +218,35 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                   muted
                   playsInline
                   className="w-full h-full object-cover"
+                  style={{ display: 'block' }}
+                  onLoadedMetadata={() => {
+                    console.log('📺 Vídeo carregado e pronto');
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(console.error);
+                    }
+                  }}
                 />
               )}
+              
+              {/* Vídeo gravado para playback */}
               {recordedVideo && (
                 <video
                   ref={recordedVideoRef}
                   controls
                   playsInline
                   className="w-full h-full object-cover"
+                  style={{ display: 'block' }}
                 />
+              )}
+              
+              {/* Placeholder quando não há stream */}
+              {!stream && !recordedVideo && (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <div className="text-center">
+                    <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground text-sm">Carregando câmera...</p>
+                  </div>
+                </div>
               )}
             </div>
             
