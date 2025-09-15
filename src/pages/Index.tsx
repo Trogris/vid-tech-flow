@@ -114,6 +114,7 @@ const Index = () => {
         case 'recording-aberto':
           return (
             <GravacaoVideo 
+              key="gravacao-aberto"
               onNext={handleRecordingAbertoNext} 
               onBack={handleRecordingAbertoBack}
               etapa="Equipamento Aberto"
@@ -124,6 +125,7 @@ const Index = () => {
         case 'recording-fechado':
           return (
             <GravacaoVideo 
+              key="gravacao-fechado"
               onNext={handleRecordingFechadoNext} 
               onBack={handleRecordingFechadoBack}
               etapa="Equipamento Fechado"
