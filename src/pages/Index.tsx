@@ -4,6 +4,7 @@ import SafeGravacaoVideo from '@/components/SafeGravacaoVideo';
 import ProcessamentoVideo from '@/components/ProcessamentoVideo';
 import ResultadosRelatorio from '@/components/ResultadosRelatorio';
 import DebugPanel from '@/components/DebugPanel';
+import DiagnosticTest from '@/components/DiagnosticTest';
 
 type Step = 'form' | 'recording-aberto' | 'recording-fechado' | 'processing' | 'results';
 
@@ -108,7 +109,7 @@ const Index = () => {
 
       switch (currentStep) {
         case 'form':
-          return <FormularioInicial onNext={handleFormNext} />;
+          return <DiagnosticTest />; // Temporariamente usando diagnóstico
         
         case 'recording-aberto':
           return (
