@@ -601,15 +601,16 @@ ${results.framesFechado.map((_, index) => {
         </div>
             
             {/* Resumo da galeria */}
-            <div className="bg-success border border-success/30 rounded-lg p-4 mt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-success rounded-full flex items-center justify-center">
-                  <Image className="w-5 h-5 text-success-foreground" />
+            <div className="bg-success border border-success/30 rounded-lg p-4 sm:p-6 mt-6">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-success rounded-full flex items-center justify-center flex-shrink-0">
+                  <Image className="w-6 h-6 sm:w-7 sm:h-7 text-success-foreground" />
                 </div>
-                <div>
-                  <h3 className="font-medium text-success-foreground">Frames Extraídos com Sucesso</h3>
-                  <p className="text-sm text-success-foreground/90 mt-1">
-                    {results.analysis.frameCountAberto + results.analysis.frameCountFechado} frames capturados das duas etapas ({results.analysis.frameCountAberto} aberto + {results.analysis.frameCountFechado} fechado)
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base sm:text-lg text-success-foreground">Frames Extraídos com Sucesso</h3>
+                  <p className="text-sm sm:text-base text-success-foreground/90 mt-1 leading-relaxed">
+                    <span className="font-medium">{results.analysis.frameCountAberto + results.analysis.frameCountFechado} frames</span> capturados das duas etapas
+                    <span className="block sm:inline sm:ml-1">({results.analysis.frameCountAberto} aberto + {results.analysis.frameCountFechado} fechado)</span>
                   </p>
                 </div>
               </div>
@@ -617,17 +618,17 @@ ${results.framesFechado.map((_, index) => {
 
         {/* Instruções para iPhone */}
         {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <Download className="w-4 h-4 text-white" />
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5 mb-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Download className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h3 className="font-medium text-blue-900">Instruções para iPhone</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  • Pressione e segure cada imagem para salvar na Galeria<br/>
-                  • Use o botão "Compartilhar" para salvar em Arquivos<br/>
-                  • O relatório de texto será baixado automaticamente
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-base sm:text-lg text-blue-900">Instruções para iPhone</h3>
+                <p className="text-sm sm:text-base text-blue-700 mt-2 leading-relaxed space-y-1">
+                  <span className="block">• Pressione e segure cada imagem para salvar na Galeria</span>
+                  <span className="block">• Use o botão "Compartilhar" para salvar em Arquivos</span>
+                  <span className="block">• O relatório de texto será baixado automaticamente</span>
                 </p>
               </div>
             </div>
@@ -635,21 +636,23 @@ ${results.framesFechado.map((_, index) => {
         )}
 
         {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center">
           <button
             onClick={handleDownloadReport}
-            className="btn-success flex items-center justify-center gap-2 px-8"
+            className="btn-success flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
           >
-            <Download className="w-5 h-5" />
-            {/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'Baixar Relatório TXT' : 'Download Relatório ZIP'}
+            <Download className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+            <span className="truncate">
+              {/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'Baixar Relatório TXT' : 'Download Relatório ZIP'}
+            </span>
           </button>
           
           <button
             onClick={onNewAnalysis}
-            className="btn-secondary flex items-center justify-center gap-2 px-8"
+            className="btn-secondary flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-medium shadow-md hover:shadow-lg transition-all duration-300 active:scale-95"
           >
-            <RotateCcw className="w-5 h-5" />
-            Nova Análise
+            <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+            <span>Nova Análise</span>
           </button>
         </div>
       </div>
