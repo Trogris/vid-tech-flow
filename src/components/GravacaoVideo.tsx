@@ -197,15 +197,14 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
           )}
 
           <div className="relative mb-6">
-            <div className="bg-muted rounded-lg overflow-hidden aspect-video">
+            <div className="bg-muted rounded-lg overflow-hidden aspect-video relative">
+              {/* Vídeo ao vivo da câmera */}
               <video
-                ref={recordedVideo ? recordedVideoRef : videoRef}
-                autoPlay={!recordedVideo}
-                muted={!recordedVideo}
-                controls={!!recordedVideo}
+                ref={videoRef}
+                autoPlay
+                muted
                 playsInline
-                className="w-full h-full object-cover"
-                style={{ display: 'block' }}
+                className={`w-full h-full object-cover absolute inset-0 ${recordedVideo ? 'hidden' : 'block'}`}
                 onLoadedMetadata={() => {
                   if (videoRef.current && !recordedVideo) {
                     videoRef.current.play().catch(console.error);
@@ -213,9 +212,17 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                 }}
               />
               
-              {/* Placeholder quando não há stream nem vídeo gravado */}
+              {/* Vídeo gravado (preview) */}
+              <video
+                ref={recordedVideoRef}
+                controls
+                playsInline
+                className={`w-full h-full object-cover absolute inset-0 ${recordedVideo ? 'block' : 'hidden'}`}
+              />
+              
+              {/* Placeholder quando não há stream */}
               {!stream && !recordedVideo && (
-                <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
+                <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center z-10">
                   <div className="text-center">
                     <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
                     <p className="text-muted-foreground text-sm">Carregando câmera...</p>
