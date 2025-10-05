@@ -20,6 +20,11 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Refs para controle de fullscreen
+  const isInFullscreenRef = useRef(false);
+  const fullscreenElementRef = useRef<HTMLElement | null>(null);
+  const pendingBlobRef = useRef<Blob | null>(null);
 
   const initializeCamera = useCallback(async () => {
     try {
@@ -65,6 +70,45 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         setError('Não foi possível acessar a câmera');
       }
     }
+  }, []);
+
+  // Event listeners para fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      isInFullscreenRef.current = isFullscreen;
+      
+      if (isFullscreen) {
+        fullscreenElementRef.current = document.fullscreenElement as HTMLElement || (document as any).webkitFullscreenElement;
+      } else {
+        fullscreenElementRef.current = null;
+        
+        // Processar blob pendente após sair de fullscreen
+        if (pendingBlobRef.current) {
+          setTimeout(() => {
+            if (pendingBlobRef.current && !isInFullscreenRef.current) {
+              setRecordedVideo(pendingBlobRef.current);
+              if (recordedVideoRef.current) {
+                recordedVideoRef.current.src = URL.createObjectURL(pendingBlobRef.current);
+              }
+              pendingBlobRef.current = null;
+            }
+          }, 150);
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -126,10 +170,18 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
         const videoBlob = new Blob(chunksRef.current, { 
           type: recorder.mimeType || 'video/webm' 
         });
-        setRecordedVideo(videoBlob);
         
-        if (recordedVideoRef.current) {
-          recordedVideoRef.current.src = URL.createObjectURL(videoBlob);
+        // Se estiver em fullscreen, aguardar para processar o blob
+        if (isInFullscreenRef.current) {
+          pendingBlobRef.current = videoBlob;
+        } else {
+          // Processar imediatamente se não estiver em fullscreen
+          requestAnimationFrame(() => {
+            setRecordedVideo(videoBlob);
+            if (recordedVideoRef.current) {
+              recordedVideoRef.current.src = URL.createObjectURL(videoBlob);
+            }
+          });
         }
       };
 
@@ -161,11 +213,20 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   }, [isRecording]);
 
   const restartRecording = useCallback(() => {
-    setRecordedVideo(null);
-    setRecordingTime(0);
-    if (recordedVideoRef.current) {
-      recordedVideoRef.current.src = '';
+    // Sair de fullscreen antes de resetar
+    if (isInFullscreenRef.current && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
     }
+    
+    pendingBlobRef.current = null;
+    
+    requestAnimationFrame(() => {
+      setRecordedVideo(null);
+      setRecordingTime(0);
+      if (recordedVideoRef.current) {
+        recordedVideoRef.current.src = '';
+      }
+    });
   }, []);
 
   const handleNext = useCallback(() => {
