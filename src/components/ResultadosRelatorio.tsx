@@ -601,14 +601,14 @@ ${results.framesFechado.map((_, index) => {
         </div>
             
             {/* Resumo da galeria */}
-            <div className="bg-success border border-success/30 rounded-lg p-4 sm:p-6 mt-6">
+            <div className="bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 sm:p-6 mt-8 shadow-sm">
               <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-success rounded-full flex items-center justify-center flex-shrink-0">
-                  <Image className="w-6 h-6 sm:w-7 sm:h-7 text-success-foreground" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                  <Image className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base sm:text-lg text-success-foreground">Frames Extraídos com Sucesso</h3>
-                  <p className="text-sm sm:text-base text-success-foreground/90 mt-1 leading-relaxed">
+                  <h3 className="font-semibold text-base sm:text-lg text-green-900 dark:text-green-100">Frames Extraídos com Sucesso</h3>
+                  <p className="text-sm sm:text-base text-green-800 dark:text-green-200 mt-1 leading-relaxed">
                     <span className="font-medium">{results.analysis.frameCountAberto + results.analysis.frameCountFechado} frames</span> capturados das duas etapas
                     <span className="block sm:inline sm:ml-1">({results.analysis.frameCountAberto} aberto + {results.analysis.frameCountFechado} fechado)</span>
                   </p>
@@ -618,7 +618,7 @@ ${results.framesFechado.map((_, index) => {
 
         {/* Instruções para iPhone */}
         {/iPhone|iPad|iPod/.test(navigator.userAgent) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5 mb-6">
+          <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 sm:p-5 mt-8 shadow-sm">
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <Download className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -636,10 +636,10 @@ ${results.framesFechado.map((_, index) => {
         )}
 
         {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center mt-8">
           <button
             onClick={handleDownloadReport}
-            className="btn-success flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
+            className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
           >
             <Download className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
             <span className="truncate">
@@ -649,7 +649,7 @@ ${results.framesFechado.map((_, index) => {
           
           <button
             onClick={onNewAnalysis}
-            className="btn-secondary flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-medium shadow-md hover:shadow-lg transition-all duration-300 active:scale-95"
+            className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] text-base sm:text-lg font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 active:scale-95"
           >
             <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
             <span>Nova Análise</span>
