@@ -20,11 +20,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Refs para controle de fullscreen
-  const isInFullscreenRef = useRef(false);
-  const fullscreenElementRef = useRef<HTMLElement | null>(null);
-  const pendingBlobRef = useRef<Blob | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const initializeCamera = useCallback(async () => {
     try {
@@ -72,44 +68,6 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
     }
   }, []);
 
-  // Event listeners para fullscreen
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-      isInFullscreenRef.current = isFullscreen;
-      
-      if (isFullscreen) {
-        fullscreenElementRef.current = document.fullscreenElement as HTMLElement || (document as any).webkitFullscreenElement;
-      } else {
-        fullscreenElementRef.current = null;
-        
-        // Processar blob pendente após sair de fullscreen
-        if (pendingBlobRef.current) {
-          setTimeout(() => {
-            if (pendingBlobRef.current && !isInFullscreenRef.current) {
-              setRecordedVideo(pendingBlobRef.current);
-              if (recordedVideoRef.current) {
-                recordedVideoRef.current.src = URL.createObjectURL(pendingBlobRef.current);
-              }
-              pendingBlobRef.current = null;
-            }
-          }, 150);
-        }
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
-    };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,6 +98,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   };
 
   const startRecording = useCallback(async () => {
+    setIsExpanded(true);
     if (!stream) {
       setError('Câmera não disponível');
       return;
@@ -171,17 +130,11 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
           type: recorder.mimeType || 'video/webm' 
         });
         
-        // Se estiver em fullscreen, aguardar para processar o blob
-        if (isInFullscreenRef.current) {
-          pendingBlobRef.current = videoBlob;
-        } else {
-          // Processar imediatamente se não estiver em fullscreen
-          requestAnimationFrame(() => {
-            setRecordedVideo(videoBlob);
-            if (recordedVideoRef.current) {
-              recordedVideoRef.current.src = URL.createObjectURL(videoBlob);
-            }
-          });
+        setRecordedVideo(videoBlob);
+        setIsExpanded(false);
+        
+        if (recordedVideoRef.current) {
+          recordedVideoRef.current.src = URL.createObjectURL(videoBlob);
         }
       };
 
@@ -213,20 +166,12 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   }, [isRecording]);
 
   const restartRecording = useCallback(() => {
-    // Sair de fullscreen antes de resetar
-    if (isInFullscreenRef.current && document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
+    setRecordedVideo(null);
+    setRecordingTime(0);
+    setIsExpanded(false);
+    if (recordedVideoRef.current) {
+      recordedVideoRef.current.src = '';
     }
-    
-    pendingBlobRef.current = null;
-    
-    requestAnimationFrame(() => {
-      setRecordedVideo(null);
-      setRecordingTime(0);
-      if (recordedVideoRef.current) {
-        recordedVideoRef.current.src = '';
-      }
-    });
   }, []);
 
   const handleNext = useCallback(() => {
@@ -236,29 +181,37 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   }, [recordedVideo, recordingTime, onNext]);
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in p-4">
-      <div className="max-w-4xl mx-auto pt-8">
-        <div className="card-soft p-6">
-          <div className="text-center mb-6">
-            <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Camera className="text-primary-foreground w-8 h-8" />
-            </div>
-            <h1 className="font-bold text-foreground text-2xl mb-2">
-              {etapa || 'Gravação'}
-            </h1>
-            <p className="text-muted-foreground">
-              {recordedVideo ? 'Vídeo gravado com sucesso' : (descricao || 'Grave seu vídeo')}
-            </p>
-          </div>
+    <div className={`bg-background animate-fade-in transition-all duration-300 ${
+      isExpanded ? 'fixed inset-0 z-50 p-0' : 'min-h-screen p-4'
+    }`}>
+      <div className={`mx-auto pt-8 ${isExpanded ? 'max-w-full h-full' : 'max-w-4xl'}`}>
+        <div className={`card-soft ${isExpanded ? 'h-full rounded-none p-0' : 'p-6'}`}>
+          {!isExpanded && (
+            <>
+              <div className="text-center mb-6">
+                <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Camera className="text-primary-foreground w-8 h-8" />
+                </div>
+                <h1 className="font-bold text-foreground text-2xl mb-2">
+                  {etapa || 'Gravação'}
+                </h1>
+                <p className="text-muted-foreground">
+                  {recordedVideo ? 'Vídeo gravado com sucesso' : (descricao || 'Grave seu vídeo')}
+                </p>
+              </div>
 
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
-              <p className="text-destructive text-sm">{error}</p>
-            </div>
+              {error && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6">
+                  <p className="text-destructive text-sm">{error}</p>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="relative mb-6">
-            <div className="bg-muted rounded-lg overflow-hidden aspect-video relative">
+          <div className={`relative ${isExpanded ? 'h-full' : 'mb-6'}`}>
+            <div className={`bg-muted overflow-hidden relative ${
+              isExpanded ? 'h-full rounded-none' : 'rounded-lg aspect-video'
+            }`}>
               {/* Vídeo ao vivo da câmera */}
               <video
                 ref={videoRef}
@@ -293,13 +246,15 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
             </div>
             
             {isRecording && (
-              <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+              <div className="absolute top-4 left-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-medium animate-pulse z-20">
                 REC {formatTime(recordingTime)}
               </div>
             )}
           </div>
 
-          <div className="flex justify-center gap-4 mb-6">
+          {!isExpanded && (
+            <>
+              <div className="flex justify-center gap-4 mb-6">
             {!recordedVideo && (
               <button
                 onClick={isRecording ? stopRecording : startRecording}
@@ -331,9 +286,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                 Gravar Novamente
               </button>
             )}
-          </div>
+              </div>
 
-          <div className="flex gap-3">
+              <div className="flex gap-3">
             <button
               onClick={onBack}
               className="btn-secondary flex-1"
@@ -351,7 +306,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
               Processar
               <ArrowRight className="w-5 h-5" />
             </button>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
