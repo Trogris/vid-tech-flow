@@ -181,11 +181,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
   }, [recordedVideo, recordingTime, onNext]);
 
   return (
-    <div className={`bg-background animate-fade-in transition-all duration-300 ${
-      isExpanded ? 'fixed inset-0 z-50 p-0' : 'min-h-screen p-4'
-    }`}>
-      <div className={`mx-auto pt-8 ${isExpanded ? 'max-w-full h-full' : 'max-w-4xl'}`}>
-        <div className={`card-soft ${isExpanded ? 'h-full rounded-none p-0' : 'p-6'}`}>
+    <div className="bg-background animate-fade-in min-h-screen p-4">
+      <div className="mx-auto pt-8 max-w-4xl">
+        <div className="card-soft p-6">
           {!isExpanded && (
             <>
               <div className="text-center mb-6">
@@ -208,9 +206,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
             </>
           )}
 
-          <div className={`relative ${isExpanded ? 'h-full' : 'mb-6'}`}>
-            <div className={`bg-muted overflow-hidden relative ${
-              isExpanded ? 'h-full rounded-none' : 'rounded-lg aspect-video'
+          <div className="relative mb-6">
+            <div className={`bg-muted overflow-hidden relative rounded-lg transition-all duration-300 ${
+              isExpanded ? 'h-[80vh]' : 'aspect-video'
             }`}>
               {/* Vídeo ao vivo da câmera */}
               <video
@@ -252,9 +250,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
             )}
           </div>
 
-          {!isExpanded && (
-            <>
-              <div className="flex justify-center gap-4 mb-6">
+          <div className="flex justify-center gap-4 mb-6">
             {!recordedVideo && (
               <button
                 onClick={isRecording ? stopRecording : startRecording}
@@ -286,9 +282,9 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
                 Gravar Novamente
               </button>
             )}
-              </div>
+          </div>
 
-              <div className="flex gap-3">
+          <div className="flex gap-3">
             <button
               onClick={onBack}
               className="btn-secondary flex-1"
@@ -306,9 +302,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
               Processar
               <ArrowRight className="w-5 h-5" />
             </button>
-              </div>
-            </>
-          )}
+          </div>
         </div>
       </div>
     </div>
