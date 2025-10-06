@@ -31,7 +31,7 @@ const GravacaoVideo: React.FC<GravacaoVideoProps> = ({ onNext, onBack, etapa, de
 
       const constraints = {
         video: {
-          facingMode: { exact: 'user' },
+          facingMode: { exact: 'environment' },
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
